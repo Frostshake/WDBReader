@@ -11,7 +11,7 @@ namespace WDBReader::Filesystem
     using NativeFileUri = std::filesystem::path;
     static_assert(TFileUri<NativeFileUri>);
 
-    class NativeFileSource
+    class NativeFileSource final : public FileSource
     {
     public:
         NativeFileSource(std::ifstream&& stream) :
@@ -24,12 +24,12 @@ namespace WDBReader::Filesystem
         };
         NativeFileSource(NativeFileSource&&) = default;
 
-        size_t size() const
+        size_t size() const override
         {
             return _size;
         }
 
-        void read(void* dest, uint64_t bytes)
+        void read(void* dest, uint64_t bytes) override
         {
             _stream.read((char*)dest, bytes);
             if(_stream.bad() || _stream.fail()) {
@@ -37,15 +37,15 @@ namespace WDBReader::Filesystem
             }
         }
 
-        void setPos(uint64_t position)
+        void setPos(uint64_t position) override
         {
             _stream.clear();
             _stream.seekg(position, std::ios::beg);
         }
 
-        uint64_t getPos()
+        uint64_t getPos() const override
         {
-            return _stream.tellg();
+            return const_cast<std::ifstream*>(&_stream)->tellg();
         }
 
     protected:

@@ -424,6 +424,8 @@ namespace WDBReader::Database
         }
         RuntimeSchema(const RuntimeSchema&) = default;
         RuntimeSchema(RuntimeSchema&&) = default;
+        RuntimeSchema& operator=(const RuntimeSchema&) = default;
+        RuntimeSchema& operator=(RuntimeSchema&&) = default;
 
         const field_container_t& fields() const
         {
@@ -448,8 +450,8 @@ namespace WDBReader::Database
 
 
     private:
-        const field_container_t _fields;
-        const std::vector<field_name_t> _names;
+        field_container_t _fields;
+        std::vector<field_name_t> _names;
         std::vector<uint32_t> _field_offsets;
         size_t _element_count;
     };

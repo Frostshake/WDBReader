@@ -13,7 +13,7 @@ namespace WDBReader::Filesystem {
 	using CASCFileUri = uint32_t;
 	static_assert(TFileUri<CASCFileUri>);
 
-    class CASCFileSource {
+    class CASCFileSource final : public FileSource {
 	public:
 		CASCFileSource(HANDLE handle) :
 			_casc_file(handle), _pos(0)
@@ -24,12 +24,12 @@ namespace WDBReader::Filesystem {
 			}
 		}
 
-		size_t size() const {
+		size_t size() const override {
 			return _size;
 		}
-		void read(void* dest, uint64_t bytes);
-		void setPos(uint64_t position);
-		uint64_t getPos() const 
+		void read(void* dest, uint64_t bytes) override;
+		void setPos(uint64_t position) override;
+		uint64_t getPos() const override 
         {
 			return _pos;
 		}

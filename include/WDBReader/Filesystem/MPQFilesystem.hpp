@@ -13,7 +13,7 @@ namespace WDBReader::Filesystem
 	using MPQFileUri = std::string;
 	static_assert(TFileUri<MPQFileUri>);
 
-	class MPQFileSource
+	class MPQFileSource final : public FileSource
 	{
 	public:
 		MPQFileSource(HANDLE handle) :
@@ -22,13 +22,13 @@ namespace WDBReader::Filesystem
 			_size = SFileGetFileSize(_mpq_file.get(), 0);
 		}
 
-		size_t size() const
+		size_t size() const override
 		{
 			return _size;
 		}
-		void read(void* dest, uint64_t bytes);
-		void setPos(uint64_t position);
-		uint64_t getPos() const
+		void read(void* dest, uint64_t bytes) override;
+		void setPos(uint64_t position) override;
+		uint64_t getPos() const override
 		{
 			return _pos;
 		}

@@ -27,7 +27,15 @@ namespace WDBReader::Filesystem {
 		{ t.open(FU()) } -> std::same_as<std::unique_ptr<FS>>;
 	};
 
-	class MemoryFileSource {
+	class FileSource {
+		public:
+		virtual size_t size() const = 0;
+		virtual void read(void*, uint64_t) = 0;
+		virtual void setPos(uint64_t) = 0;
+		virtual uint64_t getPos() const = 0;
+	};
+
+	class MemoryFileSource final : public FileSource {
 	public:
 		template<TFileSource T>
 		MemoryFileSource(T& source) : _size(source.size()), _pos(0)
@@ -37,11 +45,11 @@ namespace WDBReader::Filesystem {
 			source.read(_data.get(), _size);
 		}
 
-		inline size_t size() const {
+		inline size_t size() const override {
 			return _size;
 		}
 
-		inline void read(void* dest, uint64_t bytes) {
+		inline void read(void* dest, uint64_t bytes) override {
 			const auto available = _size - _pos;
 			const auto read_bytes = std::min(bytes, available);
 			if (read_bytes != bytes) {
@@ -54,12 +62,12 @@ namespace WDBReader::Filesystem {
 			_pos += read_bytes;
 		}
 
-		inline void setPos(uint64_t position) {
+		inline void setPos(uint64_t position) override {
 			_pos = position;
 			assert(_pos < _size);
 		}
 
-		inline uint64_t getPos() const {
+		inline uint64_t getPos() const override {
 			return _pos;
 		}
 
