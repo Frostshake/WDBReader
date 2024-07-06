@@ -159,6 +159,21 @@ namespace WDBReader::Database {
 			record.recordIndex = index;
 			record.encryptionState = RecordEncryption::NONE;
 
+			uint32_t schema_field_index = 0;
+			ptrdiff_t view_offset = 0;
+			db2_record_id_t record_id = 0;
+			db2_record_id_t id_list_use_id = 0;
+
+			if (_load_info.useIdList) {
+				id_list_use_id = replacement_id.has_value() ? replacement_id.value() : _structure.idList[lookup_index];
+				if (id_list_use_id == 0 && is_encypted_section) {
+					//if the idList value is zero, then the ID is encrypted. 
+					//even if the buffer is non-zero, it could still be bad (AFAIK it should be read as zero from casclib, however doesnt seem to always be)
+					record.encryptionState = RecordEncryption::ENCRYPTED;
+					return record;
+				}
+			}
+
 			if (is_encypted_section) {
 				const bool record_encrypted = std::all_of(_buffer.begin(), _buffer.end(), [](auto i) { return i == 0; });
 				record.encryptionState = record_encrypted ? RecordEncryption::ENCRYPTED : RecordEncryption::DECRYPTED;
@@ -170,18 +185,12 @@ namespace WDBReader::Database {
 
 			R::make(&record, _schema.elementCount(), _record_size);
 
-			uint32_t schema_field_index = 0;
-			ptrdiff_t view_offset = 0;
-
-			db2_record_id_t record_id = 0;
-
 			if (_load_info.useIdList) {
-				R::insertField(&record, schema_field_index, 1, view_offset);
-				db2_record_id_t use_id = replacement_id.has_value() ? replacement_id.value() : _structure.idList[lookup_index];
-				R::insertValue(&record, schema_field_index++, 0, view_offset, use_id);
-				view_offset += sizeof(uint32_t);
 				assert(record_id == 0);
-				record_id = use_id;
+				R::insertField(&record, schema_field_index, 1, view_offset);
+				R::insertValue(&record, schema_field_index++, 0, view_offset, id_list_use_id);
+				view_offset += sizeof(uint32_t);
+				record_id = id_list_use_id;
 			}
 
 			for (uint32_t x = 0; x < _structure.header.field_count; x++) {
