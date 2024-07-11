@@ -333,6 +333,8 @@ namespace WDBReader::Database
                         const auto& field = _accessor->_schema._fields[_index];
                         const auto& offset = _accessor->_schema._field_offsets[_index];
 
+                        assert(_accessor->_record.data.size() > offset);
+
                         _val.name = &name;
                         _val.field = &field;
                         _val.value = {
@@ -352,7 +354,11 @@ namespace WDBReader::Database
 
             inline constexpr record_accessor(const RuntimeSchema &schema, const R& record) : _schema(schema), _record(record)
             {
-                assert(_record.data.size() == _schema.elementCount());
+#ifdef _DEBUG
+                if (_record.encryptionState != RecordEncryption::ENCRYPTED) {
+                    assert(_record.data.size() == _schema.elementCount());
+                }
+#endif
             }
 
             inline constexpr const_iterator begin() const

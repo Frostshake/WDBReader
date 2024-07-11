@@ -92,7 +92,11 @@ namespace WDBReader::Database {
         }
 
         iterator cbegin() const {
-            return iterator(this, 0, std::move((*this)[0]));
+            if (this->size() > 0) {
+                return iterator(this, 0, std::move((*this)[0]));
+            }
+
+            return cend();
         }
 
         iterator cend() const {
