@@ -105,7 +105,11 @@ int main(int argc, char* argv[]) {
         else {
             std::cout << "Found " << found_clients.size() << " installs: " << std::endl;
             for (const auto& info : found_clients) {
-                std::cout << "Name: '" << info.name << "', Locale: '" << info.locale << "', Version: " << info.version.toString() << std::endl;
+                std::cout << "Name: '" << info.name << "', Version: " << info.version.toString() << "', Locales: '";
+                for (const auto& locale : info.locales) {
+                    std::cout << locale << ',';
+                }
+                std::cout << std::endl;
             }
         }
 
@@ -150,7 +154,7 @@ int main(int argc, char* argv[]) {
 }
 
 CASCFSHandler::CASCFSHandler(const AppArgs& args, const ClientInfo& info) :
-    _fs(args.wow_dir, CASCLocaleConvert(info.locale), info.name)
+    _fs(args.wow_dir, CASCLocaleConvert(info.locales[0]), info.name)
 {
     std::cout << "Using CASC Filesystem" << std::endl;
 }

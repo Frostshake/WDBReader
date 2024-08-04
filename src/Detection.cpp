@@ -126,12 +126,15 @@ namespace WDBReader::Detection {
 								if (ver.has_value()) {							
 									ClientInfo info;
 									info.name = row[product_index];
-									info.locale = "";
 									info.version = ver.value();
 
 									std::smatch match;
-									if (std::regex_search(row[tags_index], match, locale_regex)) {
-										info.locale = match[1];
+									auto it = row[tags_index].cbegin();
+									auto end = row[tags_index].cend();
+
+									while (std::regex_search(it, end, match, locale_regex)) {
+										info.locales.push_back(match[1]);
+										it = match.suffix().first;
 									}
 
 									result.push_back(std::move(info));
@@ -225,7 +228,6 @@ namespace WDBReader::Detection {
 						ClientInfo info;
 						info.name = "";
 						info.version = game_ver.value();
-						info.locale = "";
 
 						const std::regex locale_regex{ "([a-z]{2}[A-Z]{2})" };
 
@@ -234,7 +236,7 @@ namespace WDBReader::Detection {
 								const auto item_name = item.path().filename().string();
 								std::smatch match;
 								if (std::regex_search(item_name, match, locale_regex)) {
-									info.locale = match[1];
+									info.locales.push_back(match[1]);
 									break;
 								}
 							}

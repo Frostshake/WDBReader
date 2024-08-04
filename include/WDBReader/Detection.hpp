@@ -10,7 +10,7 @@ namespace WDBReader::Detection {
 	struct ClientInfo {
 	public:
 		std::string name;
-		std::string locale;
+		std::vector<std::string> locales; // usually this is only ever one.
 		Utility::GameVersion version;
 	};
 
