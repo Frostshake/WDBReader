@@ -74,4 +74,6 @@ namespace WDBReader::Filesystem
 
 	static_assert(TFilesystem<MPQFilesystem, MPQFileUri, MPQFileSource>);
 
+	std::vector<std::string> discoverMPQArchives(const std::filesystem::path& root);
+
 }

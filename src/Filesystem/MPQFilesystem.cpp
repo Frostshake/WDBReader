@@ -56,4 +56,52 @@ namespace WDBReader::Filesystem {
 		return nullptr;
 	}
 
+	std::vector<std::string> discoverMPQArchives(const std::filesystem::path& root)
+	{
+		std::vector<std::filesystem::path> result;
+
+		for (const auto& entry : std::filesystem::recursive_directory_iterator(root)) {
+			if (entry.is_regular_file()) {
+				const auto extension = entry.path().extension().string();
+				if (extension == ".mpq" || extension == ".MPQ") {
+					result.push_back(entry.path().lexically_relative(root).generic_string());
+				}
+			}
+		}
+
+		std::ranges::sort(result.begin(), result.end(), [](const std::filesystem::path& left, const std::filesystem::path& right) {
+			const auto& left_name = left.stem().native();
+			const auto& right_name = right.stem().native();
+
+			const auto& left_path = left.parent_path().native();
+			const auto& right_path = right.parent_path().native();
+
+			if (left_path == right_path) {
+
+				if (left_name.starts_with(right_name)) {
+					return true;
+				}
+				else if (right_name.starts_with(left_name)) {
+					return false;
+				}
+
+				if (left_name == right_name) {
+					return left.string() > right.string();
+				}
+
+				return left_name > right;
+			}
+
+			return left_path > right_path;
+		});
+
+		std::vector<std::string> out;
+		out.reserve(result.size());
+		std::transform(result.begin(), result.end(), std::back_inserter(out), [](const auto& item) {
+			return item.string();
+		});
+
+		return out;
+	}
+
 }

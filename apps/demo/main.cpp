@@ -67,7 +67,6 @@ private:
 
 void printSchema(const RuntimeSchema& schema);
 void printRecord(const RuntimeSchema& schema, const RuntimeRecord& record);
-std::vector<std::string> searchMPQs(const std::filesystem::path& root);
 
 int main(int argc, char* argv[]) {
 
@@ -129,7 +128,7 @@ int main(int argc, char* argv[]) {
         }
 
         std::unique_ptr<FilesystemHandler> fs_handler;
-        auto found_mpqs = searchMPQs(args.wow_dir / "Data");
+        auto found_mpqs = discoverMPQArchives(args.wow_dir / "Data");
         if (found_mpqs.size() > 0) {
             fs_handler = std::make_unique<MPQFSHandler>(args, target_client, std::move(found_mpqs));
         }
@@ -199,46 +198,6 @@ std::unique_ptr<DataSource<RuntimeRecord>> MPQFSHandler::open(const std::string&
 
     std::cout << "DBC (" << dbc->size() << ")" << std::endl;
     return dbc;
-}
-
-std::vector<std::string> searchMPQs(const std::filesystem::path& root) {
-
-    std::vector<std::filesystem::path> result;
-
-    for (const auto& entry : std::filesystem::recursive_directory_iterator(root)) {
-        if (entry.is_regular_file()) {
-            const auto extension = entry.path().extension().string();
-            if (extension == ".mpq" || extension == ".MPQ") {
-                result.push_back(entry.path().lexically_relative(root).generic_string());
-            }
-        }
-    }
-
-    std::ranges::sort(result.begin(), result.end(), [](const std::filesystem::path& left, const std::filesystem::path& right) {
-        auto left_name = left.filename().replace_extension("").string();
-        auto right_name = right.filename().replace_extension("").string();
-
-        if (left_name.starts_with(right_name)) {
-            return false;
-        }
-        else if (right_name.starts_with(left_name)) {
-            return true;
-        }
-
-        if (left_name == right_name) {
-            return left.string() < right.string();
-        }
-
-        return left_name < right;
-    });
-
-    std::vector<std::string> out;
-    out.reserve(result.size());
-    std::transform(result.begin(), result.end(), std::back_inserter(out), [](const auto& item) {
-        return item.string();
-    });
-
-    return out;
 }
 
 void printSchema(const RuntimeSchema& schema) {
