@@ -25,9 +25,9 @@ namespace WDBReader::Database {
 		CATA_PLUS	// Cata and above
 	};
 
-	inline constexpr DBCVersion getDBCVersion(const Utility::GameVersion& version) {
-		constexpr auto v1_cutoff = Utility::GameVersion(2, 1, 0, 6692);
-		constexpr auto v2_cutoff = Utility::GameVersion(4, 0, 0, 0);	// not sure of the build number, but this is accurate enough
+	inline constexpr DBCVersion getDBCVersion(const GameVersion& version) {
+		constexpr auto v1_cutoff = GameVersion(2, 1, 0, 6692);
+		constexpr auto v2_cutoff = GameVersion(4, 0, 0, 0);	// not sure of the build number, but this is accurate enough
 
 		if (version < v2_cutoff) {
 			if (version < v1_cutoff) {

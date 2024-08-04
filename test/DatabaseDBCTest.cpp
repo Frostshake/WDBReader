@@ -6,7 +6,7 @@
 
 using namespace WDBReader::Database;
 using namespace WDBReader::Filesystem;
-using namespace WDBReader::Utility;
+using namespace WDBReader;
 
 
 #pragma pack(push, 1)

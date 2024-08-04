@@ -6,12 +6,12 @@
 #include <string>
 #include <vector>
 
-namespace WDBReader::Detection {
+namespace WDBReader {
 	struct ClientInfo {
 	public:
 		std::string name;
 		std::vector<std::string> locales; // usually this is only ever one.
-		Utility::GameVersion version;
+		GameVersion version;
 	};
 
     class Detector {

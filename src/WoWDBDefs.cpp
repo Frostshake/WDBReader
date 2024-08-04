@@ -102,7 +102,7 @@ namespace WDBReader::WoWDBDefs {
 			const auto COMMENT_SEPARATOR = "//";
 			auto comment_pos = line.find("//");
 			if (comment_pos != line.npos) {
-				column_definition.comment = Utility::trim(line.substr(comment_pos + std::strlen(COMMENT_SEPARATOR)));
+				column_definition.comment = trim(line.substr(comment_pos + std::strlen(COMMENT_SEPARATOR)));
 			}
 
 			if (db_definition.columnDefinitions.contains(name)) {
@@ -160,12 +160,12 @@ namespace WDBReader::WoWDBDefs {
 			if (line.starts_with(KEYWORD_LAYOUT)) {
 
 				auto hashes_full = line.substr(std::strlen(KEYWORD_LAYOUT) + 1);
-				auto hashes_split = Utility::split_string(hashes_full, ", ");
+				auto hashes_split = split_string(hashes_full, ", ");
 				layout_hashes.insert(layout_hashes.end(), hashes_split.begin(), hashes_split.end());
 			}
 			else if (line.starts_with(KEYWORD_BUILD)) {
 				auto builds_full = line.substr(std::strlen(KEYWORD_BUILD) + 1);
-				auto builds_split = Utility::split_string(builds_full, ", ");
+				auto builds_split = split_string(builds_full, ", ");
 				for (const auto& build_str : builds_split) {
 					const auto range_sep_pos = build_str.find_first_of('-');
 					if (range_sep_pos != build_str.npos) {
@@ -179,7 +179,7 @@ namespace WDBReader::WoWDBDefs {
 				}
 			}
 			else if (line.starts_with(KEYWORD_COMMENT)) {
-				comment = Utility::trim(line.substr(std::strlen(KEYWORD_COMMENT)));
+				comment = trim(line.substr(std::strlen(KEYWORD_COMMENT)));
 			}
 			else if (!is_line_empty_or_whitespace) {
 
@@ -202,7 +202,7 @@ namespace WDBReader::WoWDBDefs {
 				};
 
 				extract_between_tokens(line, '$', '$', [&](const std::string& str) {
-					auto annotations = Utility::split_string(str, ",");
+					auto annotations = split_string(str, ",");
 
 					if (std::ranges::any_of(annotations, [](const auto& e) { return e == "id"; })) {
 						def.isID = true;
@@ -253,7 +253,7 @@ namespace WDBReader::WoWDBDefs {
 		return db_definition;
 	}
 
-	std::optional<Database::RuntimeSchema> makeSchema(const DBDefinition& db_definition, const Utility::GameVersion& target_version) {
+	std::optional<Database::RuntimeSchema> makeSchema(const DBDefinition& db_definition, const GameVersion& target_version) {
 
         auto build_schema = [&db_definition](const std::vector<Definition>& definitions) -> Database::RuntimeSchema {
             std::vector<Database::RuntimeSchema::field_name_t> names;

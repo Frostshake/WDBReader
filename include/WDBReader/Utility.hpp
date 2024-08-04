@@ -26,10 +26,8 @@ namespace WDBReader {
     private:
         std::error_code _code;
     };
-}
 
-namespace WDBReader::Utility
-{
+
 	inline std::vector<std::string> split_string(const std::string& input, const std::string& separator) {
 		std::vector<std::string> parts;
 

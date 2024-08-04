@@ -30,10 +30,9 @@
 #define WIN32_LEAN_AND_MEAN
 #include <objbase.h>
 
+using namespace WDBReader;
 using namespace WDBReader::Database;
-using namespace WDBReader::Detection;
 using namespace WDBReader::Filesystem;
-using namespace WDBReader::Utility;
 using namespace WDBReader::WoWDBDefs;
 
 struct AppArgs {

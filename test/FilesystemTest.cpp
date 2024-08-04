@@ -7,7 +7,7 @@
 #include <fstream>
 
 using namespace WDBReader::Filesystem;
-using namespace WDBReader::Utility;
+using namespace WDBReader;
 
 TEST_CASE("Native filesystem can be read.", "[filesystem]")
 {

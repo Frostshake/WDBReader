@@ -2,7 +2,7 @@
 
 #include <WDBReader/Utility.hpp>
 
-using namespace WDBReader::Utility;
+using namespace WDBReader;
 
 TEST_CASE("Game versions can be compared.", "[utility]")
 {

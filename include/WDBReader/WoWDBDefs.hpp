@@ -11,7 +11,7 @@
 #include <vector>
 
 namespace WDBReader::WoWDBDefs {
-    using Build = WDBReader::Utility::GameVersion;
+    using Build = WDBReader::GameVersion;
 
 	struct BuildRange {
 	public:
@@ -75,5 +75,5 @@ namespace WDBReader::WoWDBDefs {
 		static const std::array<std::string, 4> ValidTypes;
 	};
 
-	std::optional<Database::RuntimeSchema> makeSchema(const DBDefinition& db_definition, const Utility::GameVersion& target_version);
+	std::optional<Database::RuntimeSchema> makeSchema(const DBDefinition& db_definition, const GameVersion& target_version);
 }

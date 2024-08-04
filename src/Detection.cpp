@@ -10,7 +10,7 @@
 #include <shobjidl.h>
 #endif
 
-namespace WDBReader::Detection {
+namespace WDBReader {
 
     class InfoFileReader {
 	public:
@@ -25,7 +25,7 @@ namespace WDBReader::Detection {
                 std::string line;
                 std::getline(stream, line);
 
-                const auto row = Utility::split_string(line, "|");
+                const auto row = split_string(line, "|");
 
                 if (row.size() > 0) {
                     if (!header_found) {
@@ -122,7 +122,7 @@ namespace WDBReader::Detection {
 
 						if (version_index >= 0 && product_index >= 0 && tags_index >= 0) {
 							for (const auto& row : reader.getRows()) {
-								const auto ver = Utility::GameVersion::fromString(row[version_index]);
+								const auto ver = GameVersion::fromString(row[version_index]);
 								if (ver.has_value()) {							
 									ClientInfo info;
 									info.name = row[product_index];
@@ -221,7 +221,7 @@ namespace WDBReader::Detection {
 				}
 
 				if (wow_ver.size() > 0) {
-					const auto game_ver = Utility::GameVersion::fromString(std::string(wow_ver.begin(), wow_ver.end()));
+					const auto game_ver = GameVersion::fromString(std::string(wow_ver.begin(), wow_ver.end()));
 
 					if (game_ver.has_value()) {
 
