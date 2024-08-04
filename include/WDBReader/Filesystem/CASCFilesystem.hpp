@@ -8,8 +8,6 @@
 
 namespace WDBReader::Filesystem {
 
-    DWORD CASCLocaleConvert(const std::string& locale);
-
 	using CASCFileUri = uint32_t;
 	static_assert(TFileUri<CASCFileUri>);
 
@@ -70,5 +68,56 @@ namespace WDBReader::Filesystem {
 	};
 
 	static_assert(TFilesystem<CASCFilesystem, CASCFileUri, CASCFileSource>);
+
+	inline constexpr DWORD CASCLocaleConvert(const std::string& locale) {
+
+		if (locale == "frFr") {
+			return CASC_LOCALE_FRFR;
+		}
+		else if (locale == "deDE") {
+			return CASC_LOCALE_DEDE;
+		}
+		else if (locale == "esES") {
+			return CASC_LOCALE_ESES;
+		}
+		else if (locale == "esMX") {
+			return CASC_LOCALE_ESMX;
+		}
+		else if (locale == "ptBR") {
+			return CASC_LOCALE_PTBR;
+		}
+		else if (locale == "itIT") {
+			return CASC_LOCALE_ITIT;
+		}
+		else if (locale == "ptPT") {
+			return CASC_LOCALE_PTPT;
+		}
+		else if (locale == "enGB") {
+			return CASC_LOCALE_ENGB;
+		}
+		else if (locale == "ruRU") {
+			return CASC_LOCALE_RURU;
+		}
+		else if (locale == "enUS") {
+			return CASC_LOCALE_ENUS;
+		}
+		else if (locale == "enCN") {
+			return CASC_LOCALE_ENCN;
+		}
+		else if (locale == "enTW") {
+			return CASC_LOCALE_ENTW;
+		}
+		else if (locale == "koKR") {
+			return CASC_LOCALE_KOKR;
+		}
+		else if (locale == "zhCN") {
+			return CASC_LOCALE_ZHCN;
+		}
+		else if (locale == "zhTW") {
+			return CASC_LOCALE_ZHTW;
+		}
+
+		return CASC_LOCALE_NONE;
+	}
 
 }

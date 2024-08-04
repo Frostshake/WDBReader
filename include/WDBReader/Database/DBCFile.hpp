@@ -25,13 +25,29 @@ namespace WDBReader::Database {
 		CATA_PLUS	// Cata and above
 	};
 
+	inline constexpr DBCVersion getDBCVersion(const Utility::GameVersion& version) {
+		constexpr auto v1_cutoff = Utility::GameVersion(2, 1, 0, 6692);
+		constexpr auto v2_cutoff = Utility::GameVersion(4, 0, 0, 0);	// not sure of the build number, but this is accurate enough
+
+		if (version < v2_cutoff) {
+			if (version < v1_cutoff) {
+				return DBCVersion::VANILLA;
+			}
+			else {
+				return DBCVersion::BC_WOTLK;
+			}
+		}
+
+		return DBCVersion::CATA_PLUS;
+	}
+
 	enum class DBCStringLocale : uint8_t {
 		enUS = 0,
 		koKR,
 		frFR,
 		deDE,
-		enCN,
-		enTW,
+		zhCN,
+		zhTW,
 		esES,
 		esMX,
 		ruRU,
@@ -47,6 +63,48 @@ namespace WDBReader::Database {
 		BC_WOTLK_SIZE = SIZE,
 		ANY = enUS // placeholder value for when locale options arent relevant.
 	};
+
+	inline constexpr DBCStringLocale DBCLocaleConvert(const std::string& locale) 
+	{
+		if (locale == "enUS") {
+			return DBCStringLocale::enUS;
+		}
+		else if (locale == "koKR") {
+			return DBCStringLocale::koKR;
+		}
+		else if (locale == "frFR") {
+			return DBCStringLocale::frFR;
+		}
+		else if (locale == "deDE") {
+			return DBCStringLocale::deDE;
+		}
+		else if (locale == "zhCN") {
+			return DBCStringLocale::zhCN;
+		}
+		else if (locale == "zhTW") {
+			return DBCStringLocale::zhTW;
+		}
+		else if (locale == "esES") {
+			return DBCStringLocale::esES;
+		}
+		else if (locale == "esMX") {
+			return DBCStringLocale::esMX;
+		}
+		else if (locale == "ruRU") {
+			return DBCStringLocale::ruRU;
+		}
+		else if (locale == "jaJP") {
+			return DBCStringLocale::jaJP;
+		}
+		else if (locale == "ptPT") {
+			return DBCStringLocale::ptPT;
+		}
+		else if (locale == "itIT") {
+			return DBCStringLocale::itIT;
+		}
+
+		throw std::invalid_argument("Unknown DBC locale.");
+	}
 
 	template<DBCVersion VER, typename StrT = string_data_t>
 	struct DBCLangString {

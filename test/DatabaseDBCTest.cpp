@@ -6,6 +6,7 @@
 
 using namespace WDBReader::Database;
 using namespace WDBReader::Filesystem;
+using namespace WDBReader::Utility;
 
 
 #pragma pack(push, 1)
@@ -177,4 +178,38 @@ TEST_CASE("Shorthand file creation.", "[database:dbc]")
 	auto rt_schema = RuntimeSchema({}, {});
 	auto runtime_type = makeDBCFile<MPQFileSource>(rt_schema, DBCVersion::VANILLA, DBCStringLocale::enUS);
 	auto static_type = makeDBCFile<StaticWOTLKDBCSpellItemEnchantmentRecord, MPQFileSource>(DBCVersion::BC_WOTLK);
+}
+
+TEST_CASE("DBC version detection.", "[database:dbc]")
+{
+	{
+		constexpr GameVersion vanilla{ 1, 12, 1, 5875 };
+		constexpr DBCVersion ver = getDBCVersion(vanilla);
+		static_assert(ver == DBCVersion::VANILLA);
+	}
+
+	{
+		constexpr GameVersion early_tbc{ 2, 0, 0, 5991 };
+		constexpr DBCVersion ver = getDBCVersion(early_tbc);
+		static_assert(ver == DBCVersion::VANILLA);
+	}
+
+	{
+		constexpr GameVersion late_tbc{ 2, 4, 3, 8606 };
+		constexpr DBCVersion ver = getDBCVersion(late_tbc);
+		static_assert(ver == DBCVersion::BC_WOTLK);
+	}
+
+	{
+		constexpr GameVersion wotlk{ 3, 3, 5, 12340 };
+		constexpr DBCVersion ver = getDBCVersion(wotlk);
+		static_assert(ver == DBCVersion::BC_WOTLK);
+	}
+
+	{
+		constexpr GameVersion cata{ 4, 3, 4, 15595 };
+		constexpr DBCVersion ver = getDBCVersion(cata);
+		static_assert(ver == DBCVersion::CATA_PLUS);
+	}
+
 }

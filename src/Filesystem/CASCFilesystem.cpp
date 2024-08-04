@@ -4,32 +4,6 @@
 
 namespace WDBReader::Filesystem {
 
-	DWORD CASCLocaleConvert(const std::string& locale) {
-
-		const std::unordered_map<std::string, DWORD> _locales_map{
-			{"frFR", CASC_LOCALE_FRFR},
-			{"deDE", CASC_LOCALE_DEDE},
-			{"esES", CASC_LOCALE_ESES},
-			{"esMX", CASC_LOCALE_ESMX},
-			{"ptBR", CASC_LOCALE_PTBR},
-			{"itIT", CASC_LOCALE_ITIT},
-			{"ptPT", CASC_LOCALE_PTPT},
-			{"enGB", CASC_LOCALE_ENGB},
-			{"ruRU", CASC_LOCALE_RURU},
-			{"enUS", CASC_LOCALE_ENUS},
-			{"enCN", CASC_LOCALE_ENCN},
-			{"enTW", CASC_LOCALE_ENTW},
-			{"koKR", CASC_LOCALE_KOKR},
-			{"zhCN", CASC_LOCALE_ZHCN},
-			{"zhTW", CASC_LOCALE_ZHTW}
-		};
-
-		if(auto result = _locales_map.find(locale); result != _locales_map.end()) {
-			return result->second;
-		}
-		return CASC_LOCALE_NONE;
-	}
-
     void CASCFileSource::read(void* dest, uint64_t bytes)
     {
         DWORD res = 0;
