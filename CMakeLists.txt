@@ -25,15 +25,17 @@ if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
     add_subdirectory(test)
   endif()
 
-  set_property(DIRECTORY PROPERTY VS_STARTUP_PROJECT schema_gen)
+  if(BUILD_APPS)
+    set_property(DIRECTORY PROPERTY VS_STARTUP_PROJECT schema_gen)
+  endif()
 
   set(TESTING_CASC_DIR "" CACHE PATH "CASC test directory")
   set(TESTING_MPQ_DIR "" CACHE PATH "MPQ test directory")
 
 endif()
 
-set(CASCLIB_DIR "" CACHE PATH "CascLib directory")
-set(STORMLIB_DIR "" CACHE PATH "StormLib directory")
+find_package(StormLib)
+find_package(CascLib)
 
 add_subdirectory(src)
 
@@ -42,3 +44,20 @@ set(BUILD_APPS OFF CACHE BOOL "Build apps")
 if(BUILD_APPS)
   add_subdirectory(apps)
 endif()
+
+set(VERSION_CONFIG "${CMAKE_CURRENT_BINARY_DIR}/WDBReaderConfigVersion.cmake")
+set(PROJECT_CONFIG "${CMAKE_CURRENT_BINARY_DIR}/WDBReaderConfig.cmake")
+
+include(CMakePackageConfigHelpers)
+write_basic_package_version_file(
+    "${VERSION_CONFIG}"
+    VERSION ${PACKAGE_VERSION}
+    COMPATIBILITY AnyNewerVersion
+    )
+
+configure_package_config_file("Config.cmake.in"
+    "${PROJECT_CONFIG}"
+    INSTALL_DESTINATION "lib/cmake/WDBReader")
+
+install(FILES "${PROJECT_CONFIG}" "${VERSION_CONFIG}" DESTINATION "lib/cmake/WDBReader")
+install(EXPORT WDBReaderTargets NAMESPACE WDBReader:: DESTINATION "lib/cmake/WDBReader")
