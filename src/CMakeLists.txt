@@ -29,10 +29,14 @@ if(WIN32)
     target_link_libraries(WDBReader PRIVATE propsys.lib)
 endif()
 
+if (MSVC)
+     target_compile_definitions(WDBReader PUBLIC UNICODE _UNICODE)
+endif()
+
 if (CascLib_FOUND)
     target_compile_definitions(WDBReader PRIVATE CASCLIB_NO_AUTO_LINK_LIBRARY)
     target_include_directories(WDBReader PUBLIC ${CascLib_INCLUDE_DIRS})
-    target_link_libraries(WDBReader PUBLIC CascLib::casc)
+    target_link_libraries(WDBReader PUBLIC CascLib::casc_static)
 endif()
 
 if (StormLib_FOUND)
@@ -49,4 +53,4 @@ install(TARGETS WDBReader
         INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
         )
 
-install(FILES ${HEADER_LIST} DESTINATION include)
+install(DIRECTORY "${WDBReader_SOURCE_DIR}/include/WDBReader/" DESTINATION include/WDBReader)

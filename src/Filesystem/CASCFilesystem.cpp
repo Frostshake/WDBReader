@@ -34,7 +34,7 @@ namespace WDBReader::Filesystem {
     CASCFilesystem::CASCFilesystem(const std::filesystem::path& root, DWORD locale_mask, const std::string& product) :
 		_storage(nullptr), _locale_mask(locale_mask)
 	{
-		const std::string casc_params = root.string() + "*" + product;
+		const std::filesystem::path::string_type casc_params = root.native() + std::filesystem::path("*" + product).native();
 
 		HANDLE temp;
 		if (!CascOpenStorage(casc_params.c_str(), _locale_mask, &temp)) {
