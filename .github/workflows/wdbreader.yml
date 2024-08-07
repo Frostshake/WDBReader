@@ -84,20 +84,23 @@ jobs:
 
     - name: build wdbreader debug
       run: |
+        cd ${{ github.workspace }}/wdbreader
         cmake -S . -B ./build -DCMAKE_DEBUG_POSTFIX=d -DCMAKE_INSTALL_PREFIX=./install -DBUILD_TESTING=ON -DBUILD_APPS=ON
         cmake --build ./build --config Debug
 
     - name: test wdbreader debug
       run: |
-        ctest --output-on-failure --test-dir build
+        ctest --output-on-failure --test-dir ${{ github.workspace }}/wdbreader/build
 
     - name: build wdbreader release
       run: |
+        cd ${{ github.workspace }}/wdbreader
         cmake -S . -B ./build -DCMAKE_DEBUG_POSTFIX=d -DCMAKE_INSTALL_PREFIX=./install -DBUILD_TESTING=OFF -DBUILD_APPS=ON
         cmake --build ./build --config Release
 
     - name: build wdbreader package
       run: |
+        cd ${{ github.workspace }}/wdbreader  
         cmake --install ./build --config Debug
         cmake --install ./build --config Release
 
