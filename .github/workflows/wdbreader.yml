@@ -34,7 +34,7 @@ jobs:
 
     - name: build casclib
       run: |
-        cd $GITHUB_WORKSPACE/deps/casclib
+        cd ${{ github.workspace }}/deps/casclib
         mkdir build
         mkdir install
         cmake -S . -B ./build -DCMAKE_DEBUG_POSTFIX=d -DCMAKE_INSTALL_PREFIX=./install -DCASC_BUILD_SHARED_LIB=OFF -DCASC_BUILD_STATIC_LIB=ON -DCASC_UNICODE=ON
@@ -51,7 +51,7 @@ jobs:
 
     - name: build stormlib
       run: |
-        cd $GITHUB_WORKSPACE/deps/stormlib
+        cd ${{ github.workspace }}/deps/stormlib
         mkdir build
         mkdir install
         cmake -S . -B ./build -DCMAKE_DEBUG_POSTFIX=d -DCMAKE_INSTALL_PREFIX=./install
@@ -68,7 +68,7 @@ jobs:
 
     - name: build catchorg/Catch2
       run: |
-        cd $GITHUB_WORKSPACE/deps/catch2
+        cd ${{ github.workspace }}/deps/catch2
         mkdir build
         mkdir install
         cmake -S . -B ./build -DCMAKE_INSTALL_PREFIX=./install
@@ -78,7 +78,7 @@ jobs:
     #WDBReader
     - name: build wdbreader prep
       run: |
-        cd $GITHUB_WORKSPACE/wdbreader
+        cd ${{ github.workspace }}/wdbreader
         mkdir build
         mkdir install
 
