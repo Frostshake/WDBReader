@@ -1,0 +1,108 @@
+name: WDBReader CI build
+
+on:
+  push:
+    paths-ignore:
+      - 'README.md'
+      - 'LICENSE'
+      - '.gitignore'
+
+  pull_request:
+    paths-ignore:
+      - 'README.md'
+      - 'LICENSE'
+      - '.gitignore'
+
+jobs:
+  build_matrix:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [windows-latest]
+    steps:
+
+    # Checkout WDBReader
+    - uses: actions/checkout@v4
+      with:
+        path: wdbreader
+    
+    #casclib
+    - uses: actions/checkout@v4
+      with:
+        repository: ladislav-zezula/CascLib
+        path: deps/casclib
+
+    - name: build casclib
+      run: |
+        cd $GITHUB_WORKSPACE/deps/casclib
+        mkdir build
+        mkdir install
+        cmake -S . -B ./build -DCMAKE_DEBUG_POSTFIX=d -DCMAKE_INSTALL_PREFIX=./install -DCASC_BUILD_SHARED_LIB=OFF -DCASC_BUILD_STATIC_LIB=ON -DCASC_UNICODE=ON
+        cmake --build ./build --config Debug
+        cmake --build ./build --config Release
+        cmake --install ./build --config Debug
+        cmake --install ./build --config Release
+
+    #stormlib
+    - uses: actions/checkout@v4
+      with:
+        repository: ladislav-zezula/StormLib
+        path: deps/stormlib
+
+    - name: build stormlib
+      run: |
+        cd $GITHUB_WORKSPACE/deps/stormlib
+        mkdir build
+        mkdir install
+        cmake -S . -B ./build -DCMAKE_DEBUG_POSTFIX=d -DCMAKE_INSTALL_PREFIX=./install
+        cmake --build ./build --config Debug
+        cmake --build ./build --config Release
+        cmake --install ./build --config Debug
+        cmake --install ./build --config Release
+
+    #catch2
+    - uses: actions/checkout@v4
+      with:
+        repository: catchorg/Catch2
+        path: deps/catch2
+
+    - name: build catchorg/Catch2
+      run: |
+        cd $GITHUB_WORKSPACE/deps/catch2
+        mkdir build
+        mkdir install
+        cmake -S . -B ./build -DCMAKE_INSTALL_PREFIX=./install
+        cmake --build ./build --config Debug
+        cmake --install ./build --config Debug
+
+    #WDBReader
+    - name: build wdbreader prep
+      run: |
+        cd $GITHUB_WORKSPACE/wdbreader
+        mkdir build
+        mkdir install
+
+    - name: build wdbreader debug
+      run: |
+        cmake -S . -B ./build -DCMAKE_DEBUG_POSTFIX=d -DCMAKE_INSTALL_PREFIX=./install -DBUILD_TESTING=ON -DBUILD_APPS=ON
+        cmake --build ./build --config Debug
+
+    - name: test wdbreader debug
+      run: |
+        ctest --output-on-failure --test-dir build
+
+    - name: build wdbreader release
+      run: |
+        cmake -S . -B ./build -DCMAKE_DEBUG_POSTFIX=d -DCMAKE_INSTALL_PREFIX=./install -DBUILD_TESTING=OFF -DBUILD_APPS=ON
+        cmake --build ./build --config Release
+
+    - name: build wdbreader package
+      run: |
+        cmake --install ./build --config Debug
+        cmake --install ./build --config Release
+
+    - name: Upload Artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        path: $GITHUB_WORKSPACE/wdbreader/install
+        name: WDBReader
