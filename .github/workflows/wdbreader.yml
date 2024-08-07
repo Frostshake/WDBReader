@@ -75,6 +75,23 @@ jobs:
         cmake --build ./build --config Debug
         cmake --install ./build --config Debug --prefix ./install
 
+    #zlib
+    - uses: actions/checkout@v4
+      with:
+        repository: madler/zlib
+        path: deps/zlib
+
+    - name: build madler/zlib
+      run: |
+        cd ${{ github.workspace }}/deps/zlib
+        mkdir build
+        mkdir install
+        cmake -S . -B ./build -DCMAKE_INSTALL_PREFIX=./install
+        cmake --build ./build --config Debug
+        cmake --install ./build --config Debug --prefix ./install
+        cmake --build ./build --config Release
+        cmake --install ./build --config Release --prefix ./install
+
     #WDBReader
     - name: build wdbreader prep
       run: |
@@ -90,6 +107,7 @@ jobs:
         -DCatch2_DIR='${{ github.workspace }}/deps/catch2/install/lib/cmake/Catch2' 
         -DCascLib_DIR='${{ github.workspace }}/deps/casclib/install/lib/cmake/CascLib' 
         -DStormLib_DIR='${{ github.workspace }}/deps/stormlib/install/share/StormLib' 
+        -DZLIB_ROOT='${{ github.workspace }}/deps/zlib/install'
         &&
         cmake --build ./build --config Debug
 
@@ -104,7 +122,8 @@ jobs:
         cmake -S . -B ./build -DCMAKE_DEBUG_POSTFIX=d -DCMAKE_INSTALL_PREFIX=./install -DBUILD_TESTING=OFF -DBUILD_APPS=ON 
           -DCatch2_DIR='${{ github.workspace }}/deps/catch2/install/lib/cmake/Catch2' 
           -DCascLib_DIR='${{ github.workspace }}/deps/casclib/install/lib/cmake/CascLib' 
-          -DStormLib_DIR='${{ github.workspace }}/deps/stormlib/install/share/StormLib' 
+          -DStormLib_DIR='${{ github.workspace }}/deps/stormlib/install/share/StormLib'
+          -DZLIB_ROOT='${{ github.workspace }}/deps/zlib/install' 
         &&
         cmake --build ./build --config Release
 
