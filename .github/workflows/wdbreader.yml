@@ -40,8 +40,8 @@ jobs:
         cmake -S . -B ./build -DCMAKE_DEBUG_POSTFIX=d -DCMAKE_INSTALL_PREFIX=./install -DCASC_BUILD_SHARED_LIB=OFF -DCASC_BUILD_STATIC_LIB=ON -DCASC_UNICODE=ON
         cmake --build ./build --config Debug
         cmake --build ./build --config Release
-        cmake --install ./build --config Debug
-        cmake --install ./build --config Release
+        cmake --install ./build --config Debug --prefix ./install
+        cmake --install ./build --config Release --prefix ./install
 
     #stormlib
     - uses: actions/checkout@v4
@@ -57,8 +57,8 @@ jobs:
         cmake -S . -B ./build -DCMAKE_DEBUG_POSTFIX=d -DCMAKE_INSTALL_PREFIX=./install
         cmake --build ./build --config Debug
         cmake --build ./build --config Release
-        cmake --install ./build --config Debug
-        cmake --install ./build --config Release
+        cmake --install ./build --config Debug --prefix ./install
+        cmake --install ./build --config Release --prefix ./install
 
     #catch2
     - uses: actions/checkout@v4
@@ -73,7 +73,7 @@ jobs:
         mkdir install
         cmake -S . -B ./build -DCMAKE_INSTALL_PREFIX=./install
         cmake --build ./build --config Debug
-        cmake --install ./build --config Debug
+        cmake --install ./build --config Debug --prefix ./install
 
     #WDBReader
     - name: build wdbreader prep
@@ -85,7 +85,10 @@ jobs:
     - name: build wdbreader debug
       run: |
         cd ${{ github.workspace }}/wdbreader
-        cmake -S . -B ./build -DCMAKE_DEBUG_POSTFIX=d -DCMAKE_INSTALL_PREFIX=./install -DBUILD_TESTING=ON -DBUILD_APPS=ON
+        cmake -S . -B ./build -DCMAKE_DEBUG_POSTFIX=d -DCMAKE_INSTALL_PREFIX=./install -DBUILD_TESTING=ON -DBUILD_APPS=ON \
+          -DCatch2_DIR=${{ github.workspace }}/deps/catch2/install/lib/cmake/Catch2 \
+          -DCascLib_DIR=${{ github.workspace }}/deps/casclib/install/lib/cmake/CascLib \
+          -DStormLib_DIR=${{ github.workspace }}/deps/stormlib/install/share/StormLib \
         cmake --build ./build --config Debug
 
     - name: test wdbreader debug
@@ -95,14 +98,17 @@ jobs:
     - name: build wdbreader release
       run: |
         cd ${{ github.workspace }}/wdbreader
-        cmake -S . -B ./build -DCMAKE_DEBUG_POSTFIX=d -DCMAKE_INSTALL_PREFIX=./install -DBUILD_TESTING=OFF -DBUILD_APPS=ON
+        cmake -S . -B ./build -DCMAKE_DEBUG_POSTFIX=d -DCMAKE_INSTALL_PREFIX=./install -DBUILD_TESTING=OFF -DBUILD_APPS=ON \
+          -DCatch2_DIR=${{ github.workspace }}/deps/catch2/install/lib/cmake/Catch2 \
+          -DCascLib_DIR=${{ github.workspace }}/deps/casclib/install/lib/cmake/CascLib \
+          -DStormLib_DIR=${{ github.workspace }}/deps/stormlib/install/share/StormLib \
         cmake --build ./build --config Release
 
     - name: build wdbreader package
       run: |
         cd ${{ github.workspace }}/wdbreader  
-        cmake --install ./build --config Debug
-        cmake --install ./build --config Release
+        cmake --install ./build --config Debug --prefix ./install
+        cmake --install ./build --config Release --prefix ./install
 
     - name: Upload Artifacts
       uses: actions/upload-artifact@v4
