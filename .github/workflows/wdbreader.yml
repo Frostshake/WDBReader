@@ -83,12 +83,14 @@ jobs:
         mkdir install
 
     - name: build wdbreader debug
-      run: |
-        cd ${{ github.workspace }}/wdbreader
-        cmake -S . -B ./build -DCMAKE_DEBUG_POSTFIX=d -DCMAKE_INSTALL_PREFIX=./install -DBUILD_TESTING=ON -DBUILD_APPS=ON \
-          -DCatch2_DIR='${{ github.workspace }}/deps/catch2/install/lib/cmake/Catch2' \
-          -DCascLib_DIR='${{ github.workspace }}/deps/casclib/install/lib/cmake/CascLib' \
-          -DStormLib_DIR='${{ github.workspace }}/deps/stormlib/install/share/StormLib' \
+      run: >
+        cd ${{ github.workspace }}/wdbreader 
+        &&
+        cmake -S . -B ./build -DCMAKE_DEBUG_POSTFIX=d -DCMAKE_INSTALL_PREFIX=./install -DBUILD_TESTING=ON -DBUILD_APPS=ON 
+        -DCatch2_DIR='${{ github.workspace }}/deps/catch2/install/lib/cmake/Catch2' 
+        -DCascLib_DIR='${{ github.workspace }}/deps/casclib/install/lib/cmake/CascLib' 
+        -DStormLib_DIR='${{ github.workspace }}/deps/stormlib/install/share/StormLib' 
+        &&
         cmake --build ./build --config Debug
 
     - name: test wdbreader debug
@@ -96,12 +98,14 @@ jobs:
         ctest --output-on-failure --test-dir ${{ github.workspace }}/wdbreader/build
 
     - name: build wdbreader release
-      run: |
+      run: >
         cd ${{ github.workspace }}/wdbreader
-        cmake -S . -B ./build -DCMAKE_DEBUG_POSTFIX=d -DCMAKE_INSTALL_PREFIX=./install -DBUILD_TESTING=OFF -DBUILD_APPS=ON \
-          -DCatch2_DIR='${{ github.workspace }}/deps/catch2/install/lib/cmake/Catch2' \
-          -DCascLib_DIR='${{ github.workspace }}/deps/casclib/install/lib/cmake/CascLib' \
-          -DStormLib_DIR='${{ github.workspace }}/deps/stormlib/install/share/StormLib' \
+        &&
+        cmake -S . -B ./build -DCMAKE_DEBUG_POSTFIX=d -DCMAKE_INSTALL_PREFIX=./install -DBUILD_TESTING=OFF -DBUILD_APPS=ON 
+          -DCatch2_DIR='${{ github.workspace }}/deps/catch2/install/lib/cmake/Catch2' 
+          -DCascLib_DIR='${{ github.workspace }}/deps/casclib/install/lib/cmake/CascLib' 
+          -DStormLib_DIR='${{ github.workspace }}/deps/stormlib/install/share/StormLib' 
+        &&
         cmake --build ./build --config Release
 
     - name: build wdbreader package
