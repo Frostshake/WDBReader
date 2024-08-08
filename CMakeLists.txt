@@ -34,8 +34,14 @@ if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
 
 endif()
 
-find_package(StormLib)
-find_package(CascLib)
+if(DEFINED CMAKE_TOOLCHAIN_FILE AND CMAKE_TOOLCHAIN_FILE MATCHES "vcpkg.cmake")
+  # stormlib encounters issues finding these when build through vcpkg, unsure why, but this solves it.
+  find_package(BZip2 REQUIRED)
+  find_package(ZLIB REQUIRED)
+endif()
+
+find_package(StormLib CONFIG)
+find_package(CascLib CONFIG)
 
 add_subdirectory(src)
 

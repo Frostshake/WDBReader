@@ -1,0 +1,11 @@
+{
+  "name": "wdbreader",
+  "description": "C++ library for reading World of Warcraft database files.",
+  "dependencies": [
+    "casclib",
+    "catch2",
+    "stormlib",
+    "zlib",
+    "bzip2"
+  ]
+}

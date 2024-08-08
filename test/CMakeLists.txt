@@ -1,6 +1,6 @@
 cmake_minimum_required (VERSION 3.14)
 
-find_package(Catch2 3 REQUIRED)
+find_package(Catch2 3 CONFIG REQUIRED)
 
 add_executable(tests 
 Tests.cpp 
@@ -30,10 +30,6 @@ set_normalized_path(TESTING_CASC_DIR)
 set_normalized_path(TESTING_MPQ_DIR)
 
 target_compile_definitions(tests PRIVATE STORMLIB_NO_AUTO_LINK CASCLIB_NO_AUTO_LINK_LIBRARY)
-
-if (MSVC)
-     target_compile_definitions(tests PUBLIC UNICODE _UNICODE)
-endif()
 
 include(Catch)
 catch_discover_tests(tests)

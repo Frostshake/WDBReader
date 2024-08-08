@@ -29,19 +29,13 @@ if(WIN32)
     target_link_libraries(WDBReader PRIVATE propsys.lib)
 endif()
 
-if (MSVC)
-     target_compile_definitions(WDBReader PUBLIC UNICODE _UNICODE)
-endif()
-
 if (CascLib_FOUND)
     target_compile_definitions(WDBReader PRIVATE CASCLIB_NO_AUTO_LINK_LIBRARY)
-    target_include_directories(WDBReader PUBLIC ${CascLib_INCLUDE_DIRS})
     target_link_libraries(WDBReader PUBLIC CascLib::casc_static)
 endif()
 
 if (StormLib_FOUND)
     target_compile_definitions(WDBReader PRIVATE STORMLIB_NO_AUTO_LINK)
-    target_include_directories(WDBReader PUBLIC ${StormLib_INCLUDE_DIRS})
     target_link_libraries(WDBReader PUBLIC StormLib::storm)
 endif()
 

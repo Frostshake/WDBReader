@@ -31,6 +31,8 @@
 *.out
 *.app
 
-
+.vscode/
 build/
 install/
+vcpkg_installed/
+CMakeUserPresets.json
