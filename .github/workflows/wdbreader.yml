@@ -40,7 +40,8 @@ jobs:
       working-directory:  ${{ github.workspace }}/wdbreader
       run: >
         cmake -B build-static -S . -DCMAKE_TOOLCHAIN_FILE=${{ github.workspace }}/vcpkg/scripts/buildsystems/vcpkg.cmake 
-        -DVCPKG_TARGET_TRIPLET=x64-windows-static -DBUILD_SHARED_LIBS=OFF 
+        -DVCPKG_CHAINLOAD_TOOLCHAIN_FILE=${{ github.workspace }}/vcpkg/scripts/toolchains/windows.cmake 
+        -DVCPKG_TARGET_TRIPLET=x64-windows-static -DBUILD_SHARED_LIBS=OFF -DVCPKG_CRT_LINKAGE=static
         -DCMAKE_DEBUG_POSTFIX=d -DCMAKE_INSTALL_PREFIX=./install-static -DBUILD_TESTING=ON -DBUILD_APPS=ON
         &&
         cmake --build build-static --config Debug
@@ -52,7 +53,8 @@ jobs:
       working-directory:  ${{ github.workspace }}/wdbreader
       run: >
         cmake -B build-static -S . -DCMAKE_TOOLCHAIN_FILE=${{ github.workspace }}/vcpkg/scripts/buildsystems/vcpkg.cmake 
-        -DVCPKG_TARGET_TRIPLET=x64-windows-static -DBUILD_SHARED_LIBS=OFF 
+        -DVCPKG_CHAINLOAD_TOOLCHAIN_FILE=${{ github.workspace }}/vcpkg/scripts/toolchains/windows.cmake 
+        -DVCPKG_TARGET_TRIPLET=x64-windows-static -DBUILD_SHARED_LIBS=OFF  -DVCPKG_CRT_LINKAGE=static
         -DCMAKE_DEBUG_POSTFIX=d -DCMAKE_INSTALL_PREFIX=./install-static -DBUILD_TESTING=OFF -DBUILD_APPS=ON
         &&
         cmake --build build-static --config Release
