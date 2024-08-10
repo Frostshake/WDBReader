@@ -27,10 +27,10 @@ jobs:
         path: wdbreader
 
     - name: Set up vcpkg
-      uses: microsoft/setup-vcpkg@v1
+      uses: lukka/run-vcpkg@v11
       with:
-        vcpkgVersion: latest
         vcpkgDirectory: '${{ github.workspace }}/vcpkg'
+        vcpkgGitCommitId: 'latest'
         cleanAfterBuild: true
 
     - name: Install dependencies
