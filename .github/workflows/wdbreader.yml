@@ -30,8 +30,6 @@ jobs:
       uses: lukka/run-vcpkg@v11
       with:
         vcpkgDirectory: '${{ github.workspace }}/vcpkg'
-        vcpkgGitCommitId: 'latest'
-        cleanAfterBuild: true
 
     - name: Install dependencies
       working-directory:  ${{ github.workspace }}/wdbreader
