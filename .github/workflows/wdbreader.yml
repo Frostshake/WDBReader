@@ -25,116 +25,46 @@ jobs:
     - uses: actions/checkout@v4
       with:
         path: wdbreader
-    
-    #casclib
-    - uses: actions/checkout@v4
+
+    - name: Set up vcpkg
+      uses: microsoft/setup-vcpkg@v1
       with:
-        repository: ladislav-zezula/CascLib
-        path: deps/casclib
+        vcpkgVersion: latest
+        vcpkgDirectory: '${{ github.workspace }}/vcpkg'
+        cleanAfterBuild: true
 
-    - name: build casclib
-      run: |
-        cd ${{ github.workspace }}/deps/casclib
-        mkdir build
-        mkdir install
-        cmake -S . -B ./build -DCMAKE_DEBUG_POSTFIX=d -DCMAKE_INSTALL_PREFIX=./install -DCASC_BUILD_SHARED_LIB=OFF -DCASC_BUILD_STATIC_LIB=ON -DCASC_UNICODE=ON
-        cmake --build ./build --config Debug
-        cmake --build ./build --config Release
-        cmake --install ./build --config Debug --prefix ./install
-        cmake --install ./build --config Release --prefix ./install
-
-    #stormlib
-    - uses: actions/checkout@v4
-      with:
-        repository: ladislav-zezula/StormLib
-        path: deps/stormlib
-
-    - name: build stormlib
-      run: |
-        cd ${{ github.workspace }}/deps/stormlib
-        mkdir build
-        mkdir install
-        cmake -S . -B ./build -DCMAKE_DEBUG_POSTFIX=d -DCMAKE_INSTALL_PREFIX=./install
-        cmake --build ./build --config Debug
-        cmake --build ./build --config Release
-        cmake --install ./build --config Debug --prefix ./install
-        cmake --install ./build --config Release --prefix ./install
-
-    #catch2
-    - uses: actions/checkout@v4
-      with:
-        repository: catchorg/Catch2
-        path: deps/catch2
-
-    - name: build catchorg/Catch2
-      run: |
-        cd ${{ github.workspace }}/deps/catch2
-        mkdir build
-        mkdir install
-        cmake -S . -B ./build -DCMAKE_INSTALL_PREFIX=./install
-        cmake --build ./build --config Debug
-        cmake --install ./build --config Debug --prefix ./install
-
-    #zlib
-    - uses: actions/checkout@v4
-      with:
-        repository: madler/zlib
-        path: deps/zlib
-
-    - name: build madler/zlib
-      run: |
-        cd ${{ github.workspace }}/deps/zlib
-        mkdir build
-        mkdir install
-        cmake -S . -B ./build -DCMAKE_INSTALL_PREFIX=./install
-        cmake --build ./build --config Debug
-        cmake --install ./build --config Debug --prefix ./install
-        cmake --build ./build --config Release
-        cmake --install ./build --config Release --prefix ./install
+    - name: Install dependencies
+      working-directory:  ${{ github.workspace }}/wdbreader
+      run: vcpkg install
 
     #WDBReader
-    - name: build wdbreader prep
-      run: |
-        cd ${{ github.workspace }}/wdbreader
-        mkdir build
-        mkdir install
-
     - name: build wdbreader debug
+      working-directory:  ${{ github.workspace }}/wdbreader
       run: >
-        cd ${{ github.workspace }}/wdbreader 
+        cmake -B build-static -S . -DCMAKE_TOOLCHAIN_FILE=${{ github.workspace }}/vcpkg/scripts/buildsystems/vcpkg.cmake -DBUILD_SHARED_LIBS=OFF 
+        -DCMAKE_DEBUG_POSTFIX=d -DCMAKE_INSTALL_PREFIX=./install-static -DBUILD_TESTING=ON -DBUILD_APPS=ON
         &&
-        cmake -S . -B ./build -DCMAKE_DEBUG_POSTFIX=d -DCMAKE_INSTALL_PREFIX=./install -DBUILD_TESTING=ON -DBUILD_APPS=ON 
-        -DCatch2_DIR='${{ github.workspace }}/deps/catch2/install/lib/cmake/Catch2' 
-        -DCascLib_DIR='${{ github.workspace }}/deps/casclib/install/lib/cmake/CascLib' 
-        -DStormLib_DIR='${{ github.workspace }}/deps/stormlib/install/share/StormLib' 
-        -DZLIB_ROOT='${{ github.workspace }}/deps/zlib/install'
-        &&
-        cmake --build ./build --config Debug
+        cmake --build build-static --config Debug
 
     - name: test wdbreader debug
-      run: |
-        ctest --output-on-failure --test-dir ${{ github.workspace }}/wdbreader/build
+      run: ctest --output-on-failure --test-dir ${{ github.workspace }}/wdbreader/build-static
 
     - name: build wdbreader release
+      working-directory:  ${{ github.workspace }}/wdbreader
       run: >
-        cd ${{ github.workspace }}/wdbreader
+        cmake -B build-static -S . -DCMAKE_TOOLCHAIN_FILE=${{ github.workspace }}/vcpkg/scripts/buildsystems/vcpkg.cmake -DBUILD_SHARED_LIBS=OFF 
+        -DCMAKE_DEBUG_POSTFIX=d -DCMAKE_INSTALL_PREFIX=./install-static -DBUILD_TESTING=OFF -DBUILD_APPS=ON
         &&
-        cmake -S . -B ./build -DCMAKE_DEBUG_POSTFIX=d -DCMAKE_INSTALL_PREFIX=./install -DBUILD_TESTING=OFF -DBUILD_APPS=ON 
-          -DCatch2_DIR='${{ github.workspace }}/deps/catch2/install/lib/cmake/Catch2' 
-          -DCascLib_DIR='${{ github.workspace }}/deps/casclib/install/lib/cmake/CascLib' 
-          -DStormLib_DIR='${{ github.workspace }}/deps/stormlib/install/share/StormLib'
-          -DZLIB_ROOT='${{ github.workspace }}/deps/zlib/install' 
-        &&
-        cmake --build ./build --config Release
+        cmake --build build-static --config Release
 
-    - name: build wdbreader package
+    - name: install wdbreader
+      working-directory:  ${{ github.workspace }}/wdbreader
       run: |
-        cd ${{ github.workspace }}/wdbreader  
-        cmake --install ./build --config Debug --prefix ./install
-        cmake --install ./build --config Release --prefix ./install
+        cmake --install ./build-static --config Debug --prefix ./install-static
+        cmake --install ./build-static --config Release --prefix ./install-static
 
     - name: Upload Artifacts
       uses: actions/upload-artifact@v4
       with:
-        path: $GITHUB_WORKSPACE/wdbreader/install
+        path: $GITHUB_WORKSPACE/wdbreader/install-static
         name: WDBReader
