@@ -1,5 +1,7 @@
 # WDBReader
 
+![ci build](https://github.com/Frostshake/WDBReader/actions/workflows/wdbreader.yml/badge.svg?branch=main)
+
 C++ library for reading "World of Warcraft" database files.
 
 ## Features
