@@ -68,5 +68,5 @@ jobs:
     - name: Upload Artifacts
       uses: actions/upload-artifact@v4
       with:
-        path: $GITHUB_WORKSPACE/wdbreader/install-static
+        path: $GITHUB_WORKSPACE/wdbreader/install-static/**
         name: WDBReader
