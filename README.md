@@ -15,6 +15,7 @@ However should be able to work with any using WDBC, WDC3, WDC4 or WDC5 formats.
 ## Building
 
 - Build with CMake
+- Optionally use `vcpkg`
 - Optionally link to StormLib & CascLib
 
 ## Example Usage

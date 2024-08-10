@@ -35,7 +35,7 @@ namespace WDBReader::Filesystem {
 
 		for (const auto& name : names) {
 			HANDLE temp;
-			if (SFileOpenArchive((root / name).native().c_str(), 0, MPQ_OPEN_FORCE_MPQ_V1 | MPQ_OPEN_READ_ONLY, &temp)) {
+			if (SFileOpenArchive((root / name).string().c_str(), 0, MPQ_OPEN_FORCE_MPQ_V1 | MPQ_OPEN_READ_ONLY, &temp)) {
 				_archives.emplace_back(name, temp);
 			}
 			else {

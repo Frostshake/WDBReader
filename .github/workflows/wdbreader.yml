@@ -1,0 +1,73 @@
+name: WDBReader CI build
+
+on:
+  push:
+    paths-ignore:
+      - 'README.md'
+      - 'LICENSE'
+      - '.gitignore'
+
+  pull_request:
+    paths-ignore:
+      - 'README.md'
+      - 'LICENSE'
+      - '.gitignore'
+
+jobs:
+  build_matrix:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [windows-latest]
+    steps:
+
+    # Checkout WDBReader
+    - uses: actions/checkout@v4
+      with:
+        path: wdbreader
+
+    - name: Set up vcpkg
+      uses: lukka/run-vcpkg@v11
+      with:
+        vcpkgDirectory: '${{ github.workspace }}/vcpkg'
+
+    - name: Install dependencies
+      working-directory:  ${{ github.workspace }}/wdbreader
+      run: vcpkg install
+
+    #WDBReader
+    - name: build wdbreader debug
+      working-directory:  ${{ github.workspace }}/wdbreader
+      run: >
+        cmake -B build-static -S . -DCMAKE_TOOLCHAIN_FILE=${{ github.workspace }}/vcpkg/scripts/buildsystems/vcpkg.cmake 
+        -DVCPKG_CHAINLOAD_TOOLCHAIN_FILE=${{ github.workspace }}/vcpkg/scripts/toolchains/windows.cmake 
+        -DVCPKG_TARGET_TRIPLET=x64-windows-static -DBUILD_SHARED_LIBS=OFF -DVCPKG_CRT_LINKAGE=static
+        -DCMAKE_DEBUG_POSTFIX=d -DCMAKE_INSTALL_PREFIX=./install-static -DBUILD_TESTING=ON -DBUILD_APPS=ON
+        &&
+        cmake --build build-static --config Debug
+
+    - name: test wdbreader debug
+      run: ctest --output-on-failure --test-dir ${{ github.workspace }}/wdbreader/build-static -C Debug
+
+    - name: build wdbreader release
+      working-directory:  ${{ github.workspace }}/wdbreader
+      run: >
+        cmake -B build-static -S . -DCMAKE_TOOLCHAIN_FILE=${{ github.workspace }}/vcpkg/scripts/buildsystems/vcpkg.cmake 
+        -DVCPKG_CHAINLOAD_TOOLCHAIN_FILE=${{ github.workspace }}/vcpkg/scripts/toolchains/windows.cmake 
+        -DVCPKG_TARGET_TRIPLET=x64-windows-static -DBUILD_SHARED_LIBS=OFF  -DVCPKG_CRT_LINKAGE=static
+        -DCMAKE_DEBUG_POSTFIX=d -DCMAKE_INSTALL_PREFIX=./install-static -DBUILD_TESTING=OFF -DBUILD_APPS=ON
+        &&
+        cmake --build build-static --config Release
+
+    - name: install wdbreader
+      working-directory:  ${{ github.workspace }}/wdbreader
+      run: |
+        cmake --install ./build-static --config Debug --prefix ./install-static
+        cmake --install ./build-static --config Release --prefix ./install-static
+
+    - name: Upload Artifacts
+      if: github.ref == 'refs/heads/main'
+      uses: actions/upload-artifact@v4
+      with:
+        path: ${{ github.workspace }}/wdbreader/install-static/**
+        name: WDBReader
