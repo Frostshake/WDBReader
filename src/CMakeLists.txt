@@ -31,7 +31,11 @@ endif()
 
 if (CascLib_FOUND)
     target_compile_definitions(WDBReader PRIVATE CASCLIB_NO_AUTO_LINK_LIBRARY)
-    target_link_libraries(WDBReader PUBLIC CascLib::casc_static)
+    if(BUILD_SHARED_LIBS)
+        target_link_libraries(WDBReader PUBLIC CascLib::casc)
+    else()
+        target_link_libraries(WDBReader PUBLIC CascLib::casc_static)
+    endif()
 endif()
 
 if (StormLib_FOUND)
