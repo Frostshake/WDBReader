@@ -25,6 +25,10 @@ target_include_directories(WDBReader
 )
 target_compile_features(WDBReader PUBLIC cxx_std_20)
 
+if (MSVC)
+    target_compile_definitions(WDBReader PUBLIC UNICODE _UNICODE)
+endif()
+
 if(WIN32)
     target_link_libraries(WDBReader PRIVATE propsys.lib)
 endif()

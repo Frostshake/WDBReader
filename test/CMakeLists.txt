@@ -31,6 +31,10 @@ set_normalized_path(TESTING_MPQ_DIR)
 
 target_compile_definitions(tests PRIVATE STORMLIB_NO_AUTO_LINK CASCLIB_NO_AUTO_LINK_LIBRARY)
 
+if (MSVC)
+    target_compile_definitions(tests PUBLIC UNICODE _UNICODE)
+endif()
+
 include(Catch)
 catch_discover_tests(tests)
 
