@@ -233,8 +233,47 @@ struct BFACreatureDisplayInfoRecord : public FixedRecord<BFACreatureDisplayInfoR
 	static_assert(DB2Format::recordSizeDest(schema) == sizeof(data));
 };
 
-#pragma pack(pop)
+struct BFACreatureDisplayInfoExtraRecord : public FixedRecord<BFACreatureDisplayInfoExtraRecord> {
 
+	struct Data {
+		uint32_t id;
+		uint8_t displayRaceId;
+		uint8_t displaySexId;
+		uint8_t displayClassId;
+		uint8_t skinId;
+		uint8_t faceId;
+		uint8_t hairStyleId;
+		uint8_t hairColorId;
+		uint8_t facialHairId;
+		uint8_t flags;
+		uint32_t bakeMaterialResourcesId;
+		uint32_t HDBakeMaterialResourcesId;
+		uint8_t customDisplayOption[3];
+	} data;
+
+	size_t recordIndex;
+	RecordEncryption encryptionState;
+
+	constexpr static Schema schema = Schema(
+		Field::value<decltype(data.id)>(Annotation().Id().NonInline()),
+		Field::value<decltype(data.displayRaceId)>(),
+		Field::value<decltype(data.displaySexId)>(),
+		Field::value<decltype(data.displayClassId)>(),
+		Field::value<decltype(data.skinId)>(),
+		Field::value<decltype(data.faceId)>(),
+		Field::value<decltype(data.hairStyleId)>(),
+		Field::value<decltype(data.hairColorId)>(),
+		Field::value<decltype(data.facialHairId)>(),
+		Field::value<decltype(data.flags)>(),
+		Field::value<decltype(data.bakeMaterialResourcesId)>(),
+		Field::value<decltype(data.HDBakeMaterialResourcesId)>(),
+		Field::value<decltype(data.customDisplayOption)>()
+	);
+
+	static_assert(DB2Format::recordSizeDest(schema) == sizeof(data));
+};
+
+#pragma pack(pop)
 
 #ifdef TESTING_CASC_DIR
 
@@ -365,6 +404,19 @@ TEST_CASE("Encrypted data can be read.", "[database:db2]")
 		assert(rec.recordIndex >= 0);
 	}
 }
+
+TEST_CASE("Encrypted data can be read 2.", "[database:db2]")
+{
+	auto casc_fs = CASCFilesystem(TESTING_CASC_DIR, CASC_LOCALE_ENUS);
+	auto source = casc_fs.open(1264997u);   // dbfilesclient / creaturedisplayinfoextra.db2
+
+	auto db2 = makeDB2File<BFACreatureDisplayInfoExtraRecord, CASCFileSource>(std::move(source));
+	REQUIRE(db2->size() > 0);
+
+	auto rec2 = (*db2)[42090];
+	REQUIRE(rec2.recordIndex == 42090);
+}
+
 
 TEST_CASE("Shorthand file creation.", "[database:db2]")
 {

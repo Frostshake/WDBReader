@@ -4,11 +4,13 @@
 #include <cstdint>
 #include <format>
 #include <optional>
+#include <span>
 #include <stdexcept>
 #include <string>
 #include <system_error>	
 #include <type_traits>
 #include <vector>
+#include <cassert>
 
 
 namespace WDBReader {
@@ -138,5 +140,40 @@ namespace WDBReader {
 
         private:
         T _callback;
+    };
+
+    // wrapper around std::unique_ptr<T[]> with debug bounds checking.
+    template<typename T>
+    class DynArray final {
+    public:
+        using pointer = std::unique_ptr<T[]>::pointer;
+
+        DynArray() = default;
+        DynArray(size_t size) : _data(std::make_unique_for_overwrite<T[]>(size))
+        {
+#if _DEBUG
+            _view = std::span<T>(_data.get(), size);
+#endif
+        }
+
+
+        inline T& operator[](size_t index) {
+#ifdef _DEBUG
+            assert(index < _view.size());
+#endif
+            return _data[index];
+        }
+
+        inline pointer get() {
+            return _data.get();
+        }
+
+    protected:
+        std::unique_ptr<T[]> _data;
+
+#ifdef _DEBUG
+        std::span<T> _view;
+#endif
+
     };
 }

@@ -64,12 +64,12 @@ namespace WDBReader::Database {
 	struct DB2Structure {
 	public:
 		F::Header header;
-		std::unique_ptr<typename F::SectionHeader[]> sectionHeaders;
-		std::unique_ptr<typename F::FieldStructure[]> fieldStructures;
-		std::unique_ptr<typename F::FieldStorageInfo[]> fieldStorage;
+		DynArray<typename F::SectionHeader> sectionHeaders;
+		DynArray<typename F::FieldStructure> fieldStructures;
+		DynArray<typename F::FieldStorageInfo> fieldStorage;
 
-		std::unique_ptr<std::unique_ptr<typename F::PalletValue[]>[]> indexedPalletData;
-		std::unique_ptr<std::unique_ptr<typename F::CommonValue[]>[]> indexedCommonData;	//	only used for loading.
+		std::unique_ptr<DynArray<typename F::PalletValue>[]> indexedPalletData;
+		std::unique_ptr<DynArray<typename F::CommonValue>[]> indexedCommonData;	//	only used for loading.
 		std::unique_ptr<std::unordered_map<typename F::CommonValue::id_t, typename F::CommonValue::value_t>[]> commonData;
 
 		std::vector<db2_record_id_t> idList;
@@ -111,10 +111,12 @@ namespace WDBReader::Database {
 
 			_source->setPos(_source->getPos() + current.dataOffsetEnd + current.stringOffsetEnd);
 
-			for (const auto& offset : _section_offsets) {
-				current.dataOffsetEnd += offset.dataOffsetEnd;
-				current.stringOffsetEnd += offset.stringOffsetEnd;
-				current.recordIndexEnd += offset.recordIndexEnd;
+			if (!_section_offsets.empty()) {
+				const SectionOffset& back = _section_offsets.back();
+				current.dataOffsetEnd += back.dataOffsetEnd;
+				current.stringOffsetEnd += back.stringOffsetEnd;
+				current.recordIndexEnd += back.recordIndexEnd;
+
 			}
 
 			_section_offsets.push_back(std::move(current));
@@ -143,12 +145,13 @@ namespace WDBReader::Database {
 
 			const auto section_index = getSectionIndex(lookup_index);
 			const SectionOffset& offset = _section_offsets[section_index];
-			const auto section_record_index_start = offset.recordIndexEnd - _structure.sectionHeaders[section_index].record_count;
+			const auto& section_header = _structure.sectionHeaders[section_index];
+			const auto section_record_index_start = offset.recordIndexEnd - section_header.record_count;
 			const auto relative_record_index = lookup_index - section_record_index_start;
 
-			const bool is_encypted_section = _structure.sectionHeaders[section_index].tact_key_hash != 0;
+			const bool is_encypted_section = section_header.tact_key_hash != 0;
 
-			const uint64_t source_record_start_pos = _structure.sectionHeaders[section_index].file_offset + (relative_record_index * _structure.header.record_size);
+			const uint64_t source_record_start_pos = section_header.file_offset + (relative_record_index * _structure.header.record_size);
 			_source->setPos(source_record_start_pos);
 
 			std::fill(_buffer.begin(), _buffer.end(), 0);
@@ -337,7 +340,7 @@ namespace WDBReader::Database {
 			{
 				const auto offset = field_info.compression_data.pallet.bit_offset / 8 + _structure.header.bitpacked_data_offset;
 				const auto pallet_index = getBitpackedValue<uint64_t>(buff + offset, field_info.compression_data.pallet);
-				const auto key = (pallet_index * field_info.compression_data.pallet.array_size) + array_index;
+				const size_t key = (pallet_index * field_info.compression_data.pallet.array_size) + array_index;
 				T value = _structure.indexedPalletData[field_index][key].value;
 				return value;
 			}
@@ -601,31 +604,31 @@ namespace WDBReader::Database {
 				throw WDBReaderException("Schema field count doesnt match structure.");
 			}
 
-			_structure.sectionHeaders = std::make_unique_for_overwrite<typename F::SectionHeader[]>(_structure.header.section_count);
+			_structure.sectionHeaders = DynArray<typename F::SectionHeader>(_structure.header.section_count);
 			_file_source->read(_structure.sectionHeaders.get(), sizeof(F::SectionHeader) * _structure.header.section_count);
 			
 
-			_structure.fieldStructures = std::make_unique_for_overwrite<typename F::FieldStructure[]>(_structure.header.field_count);
+			_structure.fieldStructures = DynArray<typename F::FieldStructure>(_structure.header.field_count);
 			_file_source->read(_structure.fieldStructures.get(), sizeof(F::FieldStructure) * _structure.header.field_count);
 
 			if (_structure.header.field_storage_info_size > 0) {
-				_structure.fieldStorage = std::make_unique_for_overwrite<typename F::FieldStorageInfo[]>(_structure.header.total_field_count);
+				_structure.fieldStorage = DynArray<typename F::FieldStorageInfo>(_structure.header.total_field_count);
 				_file_source->read(_structure.fieldStorage.get(), sizeof(F::FieldStorageInfo) * _structure.header.total_field_count);
 			}
 
-			_structure.indexedPalletData = std::make_unique_for_overwrite<std::unique_ptr<typename F::PalletValue[]>[]>(_structure.header.total_field_count);
+			_structure.indexedPalletData = std::make_unique_for_overwrite<DynArray<typename F::PalletValue>[]>(_structure.header.total_field_count);
 			if (_structure.header.pallet_data_size > 0) {
 				for (uint32_t i = 0; i < _structure.header.total_field_count; ++i) {
 					const auto compression = _structure.fieldStorage[i].compression_type;
 					if (compression == DB2FieldCompression::BitpackedIndexed ||
 						compression == DB2FieldCompression::BitpackedIndexedArray) {
-						_structure.indexedPalletData[i] = std::make_unique_for_overwrite<typename F::PalletValue[]>(_structure.fieldStorage[i].additional_data_size / sizeof(F::PalletValue));
+						_structure.indexedPalletData[i] = DynArray<typename F::PalletValue>(_structure.fieldStorage[i].additional_data_size / sizeof(F::PalletValue));
 						_file_source->read(_structure.indexedPalletData[i].get(), _structure.fieldStorage[i].additional_data_size);
 					}
 				}
 			}
 
-			_structure.indexedCommonData = std::make_unique_for_overwrite<std::unique_ptr<typename F::CommonValue[]>[]>(_structure.header.total_field_count);
+			_structure.indexedCommonData = std::make_unique_for_overwrite<DynArray<typename F::CommonValue>[]>(_structure.header.total_field_count);
 			_structure.commonData = std::make_unique_for_overwrite<std::unordered_map<typename F::CommonValue::id_t, typename F::CommonValue::value_t>[]>(_structure.header.total_field_count);
 			if (_structure.header.common_data_size > 0) {
 				for (uint32_t i = 0; i < _structure.header.total_field_count; ++i) {
@@ -634,7 +637,7 @@ namespace WDBReader::Database {
 
 						const auto common_count = _structure.fieldStorage[i].additional_data_size / sizeof(F::CommonValue);
 
-						_structure.indexedCommonData[i] = std::make_unique_for_overwrite<typename F::CommonValue[]>(common_count);
+						_structure.indexedCommonData[i] = DynArray<typename F::CommonValue>(common_count);
 						_file_source->read(_structure.indexedCommonData[i].get(), _structure.fieldStorage[i].additional_data_size);
 
 						for (auto addition = 0; addition < common_count; addition++) {
