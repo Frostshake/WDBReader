@@ -4,12 +4,14 @@
 #include <array>
 #include <cassert>
 #include <cstdint>
+#include <limits>
 #include <memory>
 #include <numeric>
 #include <ranges>
 #include <span>
 #include <stdexcept>	
 #include <string>
+#include <tuple>
 #include <type_traits>
 #include <variant>
 #include <vector>
@@ -392,6 +394,75 @@ namespace WDBReader::Database
                     field.size
                 };
             }
+
+            template<typename... Ts>
+            std::tuple<Ts...> get(const auto& ...names) const
+            {
+                std::tuple<Ts...> result;
+
+                static_assert(sizeof...(Ts) == sizeof...(names));
+
+                std::array<bool, sizeof...(Ts)> found;
+                found.fill(false);
+                bool all_found = false;
+
+                auto check = [&result, &found]<size_t idx>(auto & it, const auto & arg_name) -> bool {
+                    if (*it->name == arg_name) {
+                        using temp_t = std::tuple_element<idx, decltype(result)>::type;
+
+                        std::visit([&result](const auto& v) {
+                            using val_t = std::decay_t<decltype(v)>;
+
+                            if constexpr (std::is_convertible_v<val_t, temp_t>) {
+                                constexpr auto requires_bounds_check = (
+                                    std::is_arithmetic_v<val_t> && (
+                                        std::numeric_limits<temp_t>::max() < std::numeric_limits<val_t>::max() ||
+                                        std::numeric_limits<temp_t>::min() > std::numeric_limits<val_t>::min()
+                                    )
+                                );
+
+                                if constexpr (requires_bounds_check) {
+                                    if (std::numeric_limits<temp_t>::max() < v ||
+                                        std::numeric_limits<temp_t>::min() > v) {
+                                        throw std::overflow_error("Numeric limits exceeded for index " + std::to_string(idx));
+                                    }
+                                }
+
+                                std::get<idx>(result) = v;
+                            } else {
+                                throw std::runtime_error("Invalid type for index " + std::to_string(idx));
+                            }
+
+                        }, it->value[0]);
+
+                        found[idx] = true;
+                        return true;
+                    }
+                    return false;
+                };
+
+                for (auto it = begin(); it != end(); ++it) {
+
+                    auto try_set = [&check, &it]<typename... Args, size_t... Is>(std::index_sequence<Is...>, const Args& ...arg_names) {
+                        (check.template operator()<Is>(it, arg_names) || ...);
+                    };
+
+                    try_set(std::index_sequence_for<Ts...>{}, names...);
+
+                    if (std::all_of(found.begin(), found.end(), [](bool test) {return test; })) {
+                        all_found = true;
+                        break;
+                    }
+                }
+
+                if (!all_found) {
+                    throw std::runtime_error("Unable to match all arguments.");
+                }
+
+                return result;
+            }
+
+     
 
         private:
             inline uint32_t name_index(const field_name_t& name) const

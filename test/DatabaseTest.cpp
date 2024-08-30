@@ -164,4 +164,11 @@ TEST_CASE("Runtime schema can read runtime records.", "[database]")
     });
 
 
+
+    auto [file_data_id, id] = accessor.get<uint8_t, uint32_t>("fileDataId", "id");
+
+    REQUIRE(file_data_id == 13);
+    REQUIRE(id == 10);
+
+
 }

@@ -106,8 +106,10 @@ for(const auto& element : accessor) {
         }, val);
     }
 }
-
+accessor["name"];
+auto [val1, val2,...] = accessor.get<T1, T2, T..>("name1", "name2", "name"...);
 ```
+
 Schema type examples:
 ```cpp
 // Fixed / static schema (modelfiledata)
