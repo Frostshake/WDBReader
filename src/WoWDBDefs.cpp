@@ -265,7 +265,7 @@ namespace WDBReader::WoWDBDefs {
                 names.push_back(def.name);
 
                 const auto& type_str = db_definition.columnDefinitions.at(def.name).type;
-                const auto ann = Database::Annotation(def.isID, def.isRelation, !def.isNonInline);
+                const auto ann = Database::Annotation(def.isID, def.isRelation, !def.isNonInline, def.isSigned);
 
 				using array_size_t = decltype(Database::Field::size);
 				assert(def.arrLength < std::numeric_limits<array_size_t>::max());

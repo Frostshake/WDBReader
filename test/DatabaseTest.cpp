@@ -60,6 +60,16 @@ TEST_CASE("Field type resolution.", "[database]")
 
         static_assert(field1 == field2);
     }
+
+    {
+        int32_t raw1;
+        constexpr Field field1 = Field::value<decltype(raw1)>();
+        static_assert(field1.annotation.isSigned);
+
+        int32_t raw2[2];
+        constexpr Field field2 = Field::value<decltype(raw2)>();
+        static_assert(field2.annotation.isSigned);
+    }
 }
 
 
@@ -171,4 +181,168 @@ TEST_CASE("Runtime schema can read runtime records.", "[database]")
     REQUIRE(id == 10);
 
 
+}
+
+
+TEST_CASE("Runtime schema can read runtime records (array).", "[database]")
+{
+    auto schema = RuntimeSchema(
+        {
+            Field::value<uint32_t>(Annotation().Id().NonInline()),
+            Field::value<uint32_t[3]>(),
+        },
+        {
+            "id",
+            "array"
+        }
+    );
+
+
+    auto record = RuntimeRecord();
+    record.data.push_back(runtime_value_t(10u));
+    record.data.push_back(runtime_value_t(11u));
+    record.data.push_back(runtime_value_t(12u));
+    record.data.push_back(runtime_value_t(13u));
+
+    auto accessor = schema(record);
+
+
+    auto [array3] = accessor.get<std::array<uint32_t, 3>>("array");
+
+    REQUIRE(array3[0] == 11);
+    REQUIRE(array3[1] == 12);
+    REQUIRE(array3[2] == 13);
+
+    auto [array1] = accessor.get<std::array<uint32_t, 1>>("array");
+
+    REQUIRE(array1[0] == 11);
+}
+
+TEST_CASE("Runtime schema reading handles conversions.", "[database]")
+{
+    SECTION("Handles casts")
+    {
+        auto schema = RuntimeSchema(
+            {
+                Field::value<uint32_t>(Annotation().Id().NonInline()),
+                Field::value<uint8_t>(),
+                Field::value<int8_t>(), // annotated as signed.
+                Field::value<uint32_t>(),
+            },
+            {
+                "id",
+                "ubyte",
+                "sbyte",
+                "uint32"
+            }
+        );
+
+        auto record = RuntimeRecord();
+        record.data.push_back(runtime_value_t(10u));
+        record.data.push_back(uint8_t(255));
+        record.data.push_back(uint8_t(-1));
+        record.data.push_back(uint32_t(123456));
+
+        SECTION("Same size")
+        {
+
+            {
+                auto [ubyte, sbyte] = schema(record).get<uint8_t, int8_t>("ubyte", "sbyte");
+                REQUIRE(ubyte == 255);
+                REQUIRE(sbyte == -1);
+            }
+
+            {
+                auto [ubyte, sbyte] = schema(record).get<uint8_t, uint8_t>("ubyte", "sbyte");
+                REQUIRE(ubyte == 255);
+                REQUIRE(sbyte == 255);
+            }
+
+            {
+                auto [ubyte, sbyte] = schema(record).get<int8_t, int8_t>("ubyte", "sbyte");
+                REQUIRE(ubyte == -1);
+                REQUIRE(sbyte == -1);
+            }
+        }
+
+        SECTION("Up size")
+        {
+            {
+                auto [ubyte, sbyte] = schema(record).get<uint16_t, int16_t>("ubyte", "sbyte");
+                REQUIRE(ubyte == 255);
+                REQUIRE(sbyte == -1);
+            }
+
+            {
+                auto [ubyte, sbyte] = schema(record).get<uint16_t, uint16_t>("ubyte", "sbyte");
+                REQUIRE(ubyte == 255);
+                REQUIRE(sbyte == 255);
+            }
+
+            {
+                auto [ubyte, sbyte] = schema(record).get<int16_t, int16_t>("ubyte", "sbyte");
+                REQUIRE(ubyte == 255);
+                REQUIRE(sbyte == -1);
+            }
+        }
+
+        SECTION("Down size")
+        {
+            {
+                auto [uint32] = schema(record).get<uint64_t>("uint32");
+                REQUIRE(uint32 == 123456);
+            }
+
+            {
+                auto [uint32] = schema(record).get<int64_t>("uint32");
+                REQUIRE(uint32 == 123456);
+            }
+        } 
+    }
+
+    SECTION("Handles overflow")
+    {
+        auto schema = RuntimeSchema(
+            {
+                Field::value<uint32_t>(Annotation().Id().NonInline()),
+                Field::value<uint16_t>(),
+                Field::value<uint32_t>(),
+                Field::value<int16_t>(),
+                Field::value<int32_t>(),
+                Field::value<int32_t>(),
+            },
+            {
+                "id",
+                "uint16",
+                "uint32",
+                "sint16",
+                "sint32",
+                "sint32_safe"
+            }
+        );
+
+        auto record = RuntimeRecord();
+        record.data.push_back(runtime_value_t(10u));
+        record.data.push_back(uint16_t(std::numeric_limits<uint16_t>::max() - 1));
+        record.data.push_back(uint32_t(std::numeric_limits<uint32_t>::max() - 1));
+        record.data.push_back(uint16_t(std::numeric_limits<int16_t>::max() - 1));
+        record.data.push_back(uint32_t(std::numeric_limits<int32_t>::max() - 1));
+        record.data.push_back(uint32_t(10));
+
+        {
+            REQUIRE_NOTHROW(schema(record).get<uint16_t>("uint16"));
+            REQUIRE_NOTHROW(schema(record).get<uint32_t>("uint32"));
+            REQUIRE_NOTHROW(schema(record).get<int16_t>("uint16"));
+            REQUIRE_NOTHROW(schema(record).get<int32_t>("uint32"));
+        }
+
+        {
+            REQUIRE_THROWS(schema(record).get<int16_t>("sint8"));
+            REQUIRE_THROWS(schema(record).get<int32_t>("uint8"));
+        }
+
+        {
+            REQUIRE_NOTHROW(schema(record).get<int8_t>("sint32_safe"));
+        }
+    }
 }

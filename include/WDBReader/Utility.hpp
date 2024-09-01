@@ -1,5 +1,6 @@
 #pragma once
 
+#include <array>
 #include <charconv>
 #include <cstdint>
 #include <format>
@@ -176,4 +177,27 @@ namespace WDBReader {
 #endif
 
     };
+
+    template<typename T>
+    struct is_std_array : std::false_type {};
+
+    template<typename T, std::size_t N>
+    struct is_std_array<std::array<T, N>> : std::true_type {};
+
+    template<typename T>
+    inline constexpr bool is_std_array_v = is_std_array<T>::value;
+
+
+    static_assert(!is_std_array_v<uint32_t>);
+    static_assert(is_std_array_v<std::array<uint8_t, 5>>);
+
+
+    template<typename T>
+    struct element_value : std::type_identity<T> {};
+
+    template<typename T, std::size_t N>
+    struct element_value<std::array<T, N>> : std::type_identity<T> {};
+
+    template<typename T>
+    using element_value_t = element_value<T>::type;
 }

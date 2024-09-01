@@ -15,6 +15,7 @@
 #include <type_traits>
 #include <variant>
 #include <vector>
+#include "../Utility.hpp"
 
 namespace WDBReader::Database
 {
@@ -72,11 +73,12 @@ namespace WDBReader::Database
     struct Annotation final
     {
     public:
-        constexpr Annotation(bool id = false, bool rel = false, bool inl = true) : isId(id), isRelation(rel), isInline(inl) {}
+        constexpr Annotation(bool id = false, bool rel = false, bool inl = true, bool sign = false) : isId(id), isRelation(rel), isInline(inl), isSigned(sign) {}
 
         bool isId;
-        bool isRelation ;
-        bool isInline ;
+        bool isRelation;
+        bool isInline;
+        bool isSigned;
 
         inline constexpr Annotation& Id()
         {
@@ -93,6 +95,11 @@ namespace WDBReader::Database
         inline constexpr Annotation& NonInline()
         {
             this->isInline = false;
+            return *this;
+        }
+
+        inline constexpr Annotation& Signed(bool val = true) {
+            this->isSigned = val;
             return *this;
         }
     };
@@ -188,7 +195,7 @@ namespace WDBReader::Database
         inline constexpr static Field value(Annotation ann = Annotation())
             requires std::is_integral_v<T>
         {
-            return Field::integer(sizeof(T), ann);
+            return Field::integer(sizeof(T), ann.Signed(std::is_signed_v<T>));
         }
 
         template <typename T>
@@ -202,7 +209,7 @@ namespace WDBReader::Database
         inline constexpr static Field value(Annotation ann = Annotation())
             requires std::is_array_v<T> && std::is_integral_v<std::remove_extent_t<T>>
         {
-            return Field::integerArray(sizeof(T), std::extent<T>::value, ann);
+            return Field::integerArray(sizeof(T), std::extent<T>::value, ann.Signed(std::is_signed_v<std::remove_extent_t<T>>));
         }
 
     protected:
@@ -407,33 +414,83 @@ namespace WDBReader::Database
                 bool all_found = false;
 
                 auto check = [&result, &found]<size_t idx>(auto & it, const auto & arg_name) -> bool {
-                    if (*it->name == arg_name) {
-                        using temp_t = std::tuple_element<idx, decltype(result)>::type;
 
-                        std::visit([&result](const auto& v) {
+
+                    using dest_t = std::tuple_element<idx, decltype(result)>::type;
+                    constexpr bool is_array = is_std_array_v<dest_t>;
+                    using dest_val_t = element_value_t<dest_t>;
+                    using temp_t = std::conditional_t<
+                        std::is_enum_v<dest_val_t>,
+                        std::underlying_type<dest_val_t>,
+                        std::type_identity<dest_val_t>
+                    >::type;
+
+                    auto val_read = [&](size_t val_index, auto& it) -> dest_val_t {
+                        dest_val_t out;
+
+                        std::visit([&out, &it](const auto& v) {
                             using val_t = std::decay_t<decltype(v)>;
 
-                            if constexpr (std::is_convertible_v<val_t, temp_t>) {
-                                constexpr auto requires_bounds_check = (
-                                    std::is_arithmetic_v<val_t> && (
-                                        std::numeric_limits<temp_t>::max() < std::numeric_limits<val_t>::max() ||
-                                        std::numeric_limits<temp_t>::min() > std::numeric_limits<val_t>::min()
-                                    )
-                                );
-
-                                if constexpr (requires_bounds_check) {
-                                    if (std::numeric_limits<temp_t>::max() < v ||
-                                        std::numeric_limits<temp_t>::min() > v) {
+                            auto bounds_check = [](const auto& val) {
+                                using bound_val_t = std::decay_t<decltype(val)>;
+                                static_assert(sizeof(bound_val_t) == sizeof(val_t));
+                                if constexpr (std::is_arithmetic_v<val_t> && sizeof(temp_t) < sizeof(val_t)) {
+                                    if (val > std::numeric_limits<temp_t>::max() || val < std::numeric_limits<temp_t>::min()) {
                                         throw std::overflow_error("Numeric limits exceeded for index " + std::to_string(idx));
                                     }
                                 }
+                            };
 
-                                std::get<idx>(result) = v;
-                            } else {
+                            if constexpr (std::is_convertible_v<val_t, temp_t>) {
+
+                                if constexpr (std::is_integral_v<val_t> && sizeof(dest_val_t) != sizeof(val_t) && std::is_signed_v<dest_val_t>) {
+                                    if (it->field->annotation.isSigned) {
+
+                                        auto signed_v = static_cast<std::make_signed_t<val_t>>(v);
+                                        bounds_check(signed_v);
+                                        out = static_cast<dest_val_t>(signed_v);
+                                        return;
+                                    }
+                                }
+                                
+                                bounds_check(v);
+                                out = static_cast<dest_val_t>(v);
+                                 
+                            }
+                            else {
                                 throw std::runtime_error("Invalid type for index " + std::to_string(idx));
                             }
 
-                        }, it->value[0]);
+                        }, it->value[val_index]);
+
+                        return out;
+                    };
+
+                    if (*it->name == arg_name) {
+   
+                        if constexpr (is_array) {
+                            constexpr size_t max_dest_size = std::conditional_t<
+                                is_array,
+                                std::tuple_size<dest_t>,
+                                std::integral_constant<size_t, 1>
+                            >::value;
+                            static_assert(max_dest_size >= 1, "Destination size cannot be empty.");
+
+                            const auto max_size = std::min(max_dest_size, it->value.size());
+                            auto& result_array = std::get<idx>(result);
+
+                            for (size_t i = 0; i < max_size; i++) {
+                                result_array[i] = val_read(i, it);
+                            }
+
+                            for (size_t i = max_size; i < max_dest_size; i++) {
+                                // default init any excess values.
+                                result_array[i] = dest_val_t{};
+                            }
+                        }
+                        else {
+                            std::get<idx>(result) = val_read(0, it);
+                        }
 
                         found[idx] = true;
                         return true;
@@ -480,7 +537,7 @@ namespace WDBReader::Database
             const R& _record;
             const RuntimeSchema& _schema;
         };
-
+        RuntimeSchema() = default;
         RuntimeSchema(std::vector<Field>&& fields, std::vector<field_name_t>&& names) 
             : _fields(std::move(fields)), _names(std::move(names))
         {
