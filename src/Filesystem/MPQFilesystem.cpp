@@ -39,7 +39,7 @@ namespace WDBReader::Filesystem {
 				_archives.emplace_back(name, temp);
 			}
 			else {
-				throw WDBReaderException(std::string("Unable to open MPQ file -") + name, GetLastError());
+				throw WDBReaderException(std::string("Unable to open MPQ file - ") + name, GetLastError());
 			}
 		}
 	}
