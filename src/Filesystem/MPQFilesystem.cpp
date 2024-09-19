@@ -64,19 +64,43 @@ namespace WDBReader::Filesystem {
 			if (entry.is_regular_file()) {
 				const auto extension = entry.path().extension().string();
 				if (extension == ".mpq" || extension == ".MPQ") {
-					result.push_back(entry.path().lexically_relative(root).generic_string());
+					auto val = entry.path().lexically_relative(root);
+					
+					const auto name = val.stem().native();
+					if (name.starts_with(L"wow-update-")) {
+						//currently not working with these files (produces PTCH output).
+						continue;
+					}
+
+					assert(val.native().size() > 0);
+					result.push_back(std::move(val));
 				}
 			}
 		}
 
 		std::ranges::sort(result.begin(), result.end(), [](const std::filesystem::path& left, const std::filesystem::path& right) {
-			const auto& left_name = left.stem().native();
-			const auto& right_name = right.stem().native();
+			const auto left_name = left.stem().native();
+			const auto right_name = right.stem().native();
 
-			const auto& left_path = left.parent_path().native();
-			const auto& right_path = right.parent_path().native();
+			const auto left_path = left.parent_path().native();
+			const auto right_path = right.parent_path().native();
 
 			if (left_path == right_path) {
+
+				const bool left_is_exp = left_name.starts_with(L"expansion");
+				const bool right_is_exp = right_name.starts_with(L"expansion");
+
+				if (left_is_exp != right_is_exp) {
+					return left_is_exp;
+				}
+
+				const bool left_is_patch = left_name.starts_with(L"patch");
+				const bool right_is_patch = right_name.starts_with(L"patch");
+
+				if (left_is_patch != right_is_patch) {
+					return left_is_patch;
+				}
+
 
 				if (left_name.starts_with(right_name)) {
 					return true;

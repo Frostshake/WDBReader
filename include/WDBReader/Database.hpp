@@ -2,6 +2,7 @@
 
 #include "Filesystem.hpp"
 #include "Database/Schema.hpp"
+#include "Database/Formats.hpp"
 #include <cstdint>
 #include <type_traits>
 
@@ -82,6 +83,7 @@ namespace WDBReader::Database {
 
 		virtual size_t size() const = 0;
 		virtual R operator[](uint32_t index) const = 0;
+        virtual Signature signature() const = 0;
         
         iterator begin() const {
             return cbegin();
@@ -112,6 +114,7 @@ namespace WDBReader::Database {
 		{ t.open(std::unique_ptr<FS>()) };
 		{ t.load() };
 		{ t.size() } -> std::same_as<size_t>;
+        { t.signature() } -> std::same_as<Signature>;
         { t[uint32_t()] } -> std::same_as<R>;
 	};
 

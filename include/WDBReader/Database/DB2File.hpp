@@ -43,6 +43,47 @@ namespace WDBReader::Database {
 		DB2Format() = delete;
 	};
 
+	class DB2FormatWDB2 {
+	public:
+		template<TSchema S>
+		static constexpr size_t recordSizeDest(const S& schema) {
+			return recordSize<string_data_t>(schema);
+		}
+
+		template<TSchema S>
+		static constexpr size_t recordSizeSrc(const S& schema) {
+			return recordSize<string_ref_t>(schema);
+		}
+
+		template<TSchema S>
+		static constexpr size_t elementCountSrc(const S& schema) {
+			size_t sum = 0;
+
+			for (const auto& field : schema.fields()) {
+				sum += field.size;
+			}
+
+			return sum;
+		}
+
+	private:
+		template<typename StrT, TSchema S>
+		static constexpr size_t recordSize(const S& schema) {
+			size_t sum = 0;
+			for (const auto& field : schema.fields()) {
+				if (field.type == Field::Type::STRING || field.type == Field::Type::LANG_STRING) {
+					sum += (sizeof(StrT) * field.size);
+				}
+				else {
+					sum += field.totalBytes();
+				}
+			}
+			return sum;
+		}
+
+		DB2FormatWDB2() = delete;
+	};
+
 	struct DB2LoadInfo {
 	public:
 		template<TSchema S>
@@ -60,7 +101,7 @@ namespace WDBReader::Database {
 
 	using db2_record_id_t = uint32_t;
 
-	template<TDB2Format F>
+	template<TDB2FormatModern F>
 	struct DB2Structure {
 	public:
 		F::Header header;
@@ -80,7 +121,7 @@ namespace WDBReader::Database {
 		std::unordered_map<decltype(F::RelationshipEntry::record_index), decltype(F::RelationshipEntry::foreign_id)> relationshipMap;
 	};
 
-	template<TDB2Format F, TRecord R>
+	template<TDB2FormatModern F, TRecord R>
 	class DB2Loader {
 	public:
 		virtual ~DB2Loader() = default;
@@ -89,7 +130,7 @@ namespace WDBReader::Database {
 		virtual R operator[](uint32_t index) const = 0;
 	};
 
-	template<TDB2Format F, TSchema S, TRecord R, Filesystem::TFileSource FS>
+	template<TDB2FormatModern F, TSchema S, TRecord R, Filesystem::TFileSource FS>
 	class DB2LoaderStandard final : public DB2Loader<F, R> {
 	public:
 		DB2LoaderStandard(const S& schema, const DB2LoadInfo& load, DB2Structure<F>& structure, FS* source) :
@@ -399,7 +440,7 @@ namespace WDBReader::Database {
 		mutable std::vector<uint8_t> _buffer;
 	};
 
-	template<TDB2Format F, TSchema S, TRecord R, Filesystem::TFileSource FS>
+	template<TDB2FormatModern F, TSchema S, TRecord R, Filesystem::TFileSource FS>
 	class DB2LoaderSparse final : public DB2Loader<F, R> {
 	public:
 		DB2LoaderSparse(const S& schema, const DB2LoadInfo& load, DB2Structure<F>& structure, FS* source) : 
@@ -578,7 +619,10 @@ namespace WDBReader::Database {
 	};
 
 	template<TDB2Format F, TSchema S, TRecord R, Filesystem::TFileSource FS>
-	class DB2File final : public DataSource<R> {
+	class DB2File final : std::false_type {};
+
+	template<TDB2FormatModern F, TSchema S, TRecord R, Filesystem::TFileSource FS>
+	class DB2File<F, S, R, FS> final : public DataSource<R> {
 	public:
 		DB2File(const S& schema) : _format(F()), _schema(schema), _load_info(DB2LoadInfo::make(schema)) {}
 		virtual ~DB2File() = default;
@@ -736,6 +780,10 @@ namespace WDBReader::Database {
 			return _loader->size();
 		}
 
+		Signature signature() const override {
+			return F::signature;
+		}
+
 		R operator[](uint32_t index) const override {
 			assert(_loader);
 			return (*_loader)[index];
@@ -784,7 +832,127 @@ namespace WDBReader::Database {
 		DB2Structure<typename F> _structure;
 		std::unique_ptr<DB2Loader<typename F, typename R>> _loader;
 	};
+	
+	template<TSchema S, TRecord R, Filesystem::TFileSource FS>
+	class DB2File<DB2FileFormatWDB2, S, R, FS> final : public DataSource<R> {
+	public:
 
+		DB2File(const S& schema) : _schema(schema), _record_size(DB2FormatWDB2::recordSizeSrc(schema))
+		{}
+		virtual ~DB2File() = default;
+
+		void open(std::unique_ptr<FS> source) {
+			_file_source = std::move(source);
+
+			_file_source->read(&_header, sizeof(_header));
+			std::vector<uint8_t> data;
+			data.resize(sizeof(_header));
+			memcpy(data.data(), &_header, sizeof(_header));
+
+			if (_header.signature != WDB2_MAGIC.integer) {
+				throw WDBReaderException("Header signature doesnt match.");
+			}
+
+			const auto expected = DB2FormatWDB2::elementCountSrc(_schema);
+
+			if (expected != _header.field_count) {
+				throw WDBReaderException("Schema field count doesnt match structure.");
+			}
+
+				if (_header.record_size != _record_size) {
+			throw WDBReaderException("Schema record size doesnt match structure.");
+			}
+
+			_data_offset = 0;
+
+			if (_header.max_id != 0) {
+				_data_offset += sizeof(uint32_t) * (_header.max_id - _header.min_id + 1);
+				_data_offset += sizeof(uint16_t) * (_header.max_id - _header.min_id + 1);
+			}
+
+			_record_buffer.resize(_header.record_size);
+		}
+
+		void load() {}
+
+		size_t size() const override {
+			return _header.record_count;
+		}
+
+		Signature signature() const override {
+			return DB2FileFormatWDB2::signature;
+		}
+
+		R operator[](uint32_t index) const override {
+
+			uint64_t offset = sizeof(_header) + +_data_offset + (_header.record_size * index);
+			_file_source->setPos(offset);
+
+			std::fill(_record_buffer.begin(), _record_buffer.end(), 0);
+
+			_file_source->read(_record_buffer.data(), _header.record_size);
+			ptrdiff_t buffer_offset = 0;
+
+			R record;
+			record.recordIndex = index;
+			record.encryptionState = RecordEncryption::NONE;
+			R::make(&record, _schema.elementCount(), _record_size);
+
+			uint32_t schema_field_index = 0;
+			ptrdiff_t view_offset = 0;
+
+			for (const auto& field : _schema.fields()) {
+
+				R::insertField(&record, schema_field_index, field.size, view_offset);
+				for (auto z = 0; z < field.size; z++) {
+					schemaFieldHandler(field, [&]<typename T>() {
+						if constexpr (std::is_same_v<string_data_t, T>) {
+							auto string_ref = *reinterpret_cast<string_ref_t*>(_record_buffer.data() + buffer_offset);
+							_file_source->setPos(sizeof(_header) + _data_offset + (_header.record_size * _header.record_count) + string_ref);
+
+							R::insertValue(
+								&record,
+								schema_field_index,
+								z,
+								view_offset,
+								std::move(readCurrentString(_file_source.get()))
+							);
+
+
+							buffer_offset += sizeof(string_ref_t);
+							view_offset += sizeof(T);
+						}
+						else {
+							R::insertValue(&record,
+								schema_field_index,
+								z,
+								view_offset,
+								*reinterpret_cast<T*>(_record_buffer.data() + buffer_offset)
+							);
+
+							buffer_offset += sizeof(T);
+							view_offset += sizeof(T);
+						}
+					});
+				}
+
+				schema_field_index++;
+			}
+
+			return record;
+		}
+
+	protected:
+		const S _schema;
+		const size_t _record_size;
+
+		std::unique_ptr<FS> _file_source;
+		DB2FileFormatWDB2::Header _header;
+		ptrdiff_t _data_offset;
+
+		mutable std::vector<uint8_t> _record_buffer;
+
+	};
 
 	template<TSchema S, TRecord R, Filesystem::TFileSource FS, TDB2Format... F>
 	std::unique_ptr<DataSource<R>> makeDB2FileFormat(const S& schema, std::unique_ptr<FS> source) {
@@ -815,7 +983,9 @@ namespace WDBReader::Database {
 
 	template<TSchema S, TRecord R, Filesystem::TFileSource FS>
 	std::unique_ptr<DataSource<R>> makeDB2File(const S& schema, std::unique_ptr<FS> source) {
-		return makeDB2FileFormat<S, R, FS, DB2FormatWDC3, DB2FormatWDC4, DB2FormatWDC5>(schema, std::move(source));
+		return makeDB2FileFormat<S, R, FS,DB2FileFormatWDC5, DB2FileFormatWDC4, DB2FileFormatWDC3, DB2FileFormatWDB2>
+			(schema, std::move(source)
+		);
 	};
 
 	template<Filesystem::TFileSource FS>

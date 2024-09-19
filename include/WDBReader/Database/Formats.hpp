@@ -27,9 +27,14 @@ namespace WDBReader::Database {
 		uint32_t integer;
 
 		static_assert(sizeof(integer) == sizeof(bytes));
+
+		constexpr std::string_view str() const noexcept {
+			return std::string_view((char*)&bytes, bytes.size());
+		}
 	};
 
-	constexpr Signature DBC_MAGIC = "WDBC";
+	constexpr Signature WDBC_MAGIC = "WDBC";
+	constexpr Signature WDB2_MAGIC = "WDB2";
 	constexpr Signature WDC3_MAGIC = "WDC3";
 	constexpr Signature WDC4_MAGIC = "WDC4";
 	constexpr Signature WDC5_MAGIC = "WDC5";

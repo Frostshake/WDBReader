@@ -262,7 +262,7 @@ namespace WDBReader::Database {
 			data.resize(sizeof(_header));
 			memcpy(data.data(), &_header, sizeof(_header));
 
-			if (_header.signature != DBC_MAGIC.integer) {
+			if (_header.signature != WDBC_MAGIC.integer) {
 				throw WDBReaderException("Header signature doesnt match.");
 			}
 
@@ -283,6 +283,10 @@ namespace WDBReader::Database {
 
 		size_t size() const override {
 			return _header.recordCount;
+		}
+
+		Signature signature() const override {
+			return WDBC_MAGIC;
 		}
 
 		R operator[](uint32_t index) const override {
@@ -313,7 +317,7 @@ namespace WDBReader::Database {
 
 							if (field.type == Field::Type::STRING || (field.type == Field::Type::LANG_STRING && _version == DBCVersion::CATA_PLUS)) {
 								auto string_ref = *reinterpret_cast<string_ref_t*>(_record_buffer.data() + buffer_offset);
-								_file_source->setPos(sizeof(DBCHeader) + (_header.recordSize * _header.recordCount) + string_ref);;
+								_file_source->setPos(sizeof(DBCHeader) + (_header.recordSize * _header.recordCount) + string_ref);
 
 								R::insertValue(
 									&record,

@@ -346,3 +346,9 @@ TEST_CASE("Runtime schema reading handles conversions.", "[database]")
         }
     }
 }
+
+TEST_CASE("Format Strings", "[database]")
+{
+    auto str = WDB2_MAGIC.str();
+    REQUIRE(str == "WDB2");
+}

@@ -2,6 +2,7 @@
 
 #include <WDBReader/Database/DB2File.hpp>
 #include <WDBReader/Filesystem/CASCFilesystem.hpp>
+#include <WDBReader/Filesystem/MPQFilesystem.hpp>
 
 using namespace WDBReader::Database;
 using namespace WDBReader::Filesystem;
@@ -273,6 +274,26 @@ struct BFACreatureDisplayInfoExtraRecord : public FixedRecord<BFACreatureDisplay
 	static_assert(DB2Format::recordSizeDest(schema) == sizeof(data));
 };
 
+struct StaticMOPLocationRecord : public FixedRecord<StaticMOPLocationRecord> {
+
+	struct Data {
+		uint32_t id;
+		float pos[3];
+		float rot[3];
+	} data;
+
+	size_t recordIndex;
+	RecordEncryption encryptionState;
+
+	constexpr static Schema schema = Schema(
+		Field::value<decltype(data.id)>(Annotation().Id()),
+		Field::value<decltype(data.pos)>(),
+		Field::value<decltype(data.rot)>()
+	);
+
+	static_assert(DB2Format::recordSizeDest(schema) == sizeof(data));
+};
+
 #pragma pack(pop)
 
 #ifdef TESTING_CASC_DIR
@@ -426,6 +447,22 @@ TEST_CASE("Shorthand file creation.", "[database:db2]")
 
 #endif
 
+#ifdef TESTING_MPQ_DIR
 
+//TEST_CASE("WDB2 format can be handled.", "[database:db2]")
+//{
+//	auto mpq_fs = MPQFilesystem(TESTING_MPQ_DIR, discoverMPQArchives(TESTING_MPQ_DIR));
+//	auto source = mpq_fs.open("DBFilesClient\\Location.db2");
+//	REQUIRE(source != nullptr);
+//
+//	auto db2 = makeDB2File< StaticMOPLocationRecord, MPQFileSource>(std::move(source));
+//	
+//	REQUIRE(db2->size() > 0);
+//
+//
+//	for (auto& rec : *db2) {
+//		// ...
+//	}
+//}
 
-
+#endif

@@ -10,6 +10,12 @@ namespace WDBReader::Database {
 	concept TDB2Format = requires(T t) {
 		{ T::signature };
 		std::is_pod_v<typename T::Header>;
+	};
+
+	template<typename T>
+	concept TDB2FormatModern = requires(T t) {
+		{ T::signature };
+		std::is_pod_v<typename T::Header>;
 		std::is_pod_v<typename T::SectionHeader>;
 		std::is_pod_v<typename T::FieldStorageInfo>;
 		std::is_pod_v<typename T::FieldStructure>;
@@ -142,7 +148,7 @@ namespace WDBReader::Database {
 		value_t value;
 	};
 
-	struct DB2FormatWDC3 {
+	struct DB2FileFormatWDC3 {
 		constexpr static Signature signature = WDC3_MAGIC;
 
 		struct Header {
@@ -178,12 +184,12 @@ namespace WDBReader::Database {
 		using CommonValue = WDC3CommonValue;
 	};
 
-	static_assert(TDB2Format<DB2FormatWDC3>);
+	static_assert(TDB2FormatModern<DB2FileFormatWDC3>);
 
-	struct DB2FormatWDC4 {
+	struct DB2FileFormatWDC4 {
 		constexpr static Signature signature = WDC4_MAGIC;
 
-		using Header = DB2FormatWDC3::Header;
+		using Header = DB2FileFormatWDC3::Header;
 		using SectionHeader = WDC3SectionHeader;
 		using FieldStorageInfo = WDC3FieldStorageInfo;
 		using FieldStructure = WDC3FieldStructure;
@@ -195,9 +201,9 @@ namespace WDBReader::Database {
 		using CommonValue = WDC3CommonValue;
 	};
 
-	static_assert(TDB2Format<DB2FormatWDC4>);
+	static_assert(TDB2FormatModern<DB2FileFormatWDC4>);
 
-	struct DB2FormatWDC5 {
+	struct DB2FileFormatWDC5 {
 		constexpr static Signature signature = WDC5_MAGIC;
 
 		struct Header {
@@ -235,7 +241,28 @@ namespace WDBReader::Database {
 		using CommonValue = WDC3CommonValue;
 	};
 
-	static_assert(TDB2Format<DB2FormatWDC5>);
+	static_assert(TDB2FormatModern<DB2FileFormatWDC5>);
+
+	struct DB2FileFormatWDB2 {
+		constexpr static Signature signature = WDB2_MAGIC;
+
+		struct Header {
+			uint32_t signature;                                               // 'WDB2'
+			uint32_t record_count;
+			uint32_t field_count;                                         // array fields count as the size of array for WDB2
+			uint32_t record_size;
+			uint32_t string_table_size;                                   // string block almost always contains at least one zero-byte
+			uint32_t table_hash;
+			uint32_t build;
+			uint32_t timestamp_last_written;                              // set to time(0); when writing in WowClientDB2_Base::Save()
+			uint32_t min_id;
+			uint32_t max_id;
+			uint32_t locale;                                              // as seen in TextWowEnum
+			uint32_t copy_table_size;                                     // always zero in WDB2 (?) - see WDB3 for information on how to parse this
+		};
+	};
+
+	static_assert(TDB2Format<DB2FileFormatWDB2>);
 
 #pragma pack(pop)
 }
