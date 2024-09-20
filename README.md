@@ -12,7 +12,7 @@ C++ library for reading "World of Warcraft" database files.
 - Record structure determined at compile time or runtime.
 
 Currently only tested with client versions: `1.12`, `2.4`, `3.3`, `8.3` & `10.2`
-However should be able to work with any using WDBC, WDC3, WDC4 or WDC5 formats.
+However should be able to work with any using WDBC, WDB2, WDC3, WDC4 or WDC5 formats.
 
 ## Building
 
