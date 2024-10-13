@@ -66,7 +66,7 @@ namespace WDBReader::Database {
 
 	inline constexpr DBCStringLocale DBCLocaleConvert(const std::string& locale) 
 	{
-		if (locale == "enUS") {
+		if (locale == "enUS" || locale == "enGB") {
 			return DBCStringLocale::enUS;
 		}
 		else if (locale == "koKR") {
@@ -78,10 +78,10 @@ namespace WDBReader::Database {
 		else if (locale == "deDE") {
 			return DBCStringLocale::deDE;
 		}
-		else if (locale == "zhCN") {
+		else if (locale == "zhCN" || locale == "enCN") {
 			return DBCStringLocale::zhCN;
 		}
-		else if (locale == "zhTW") {
+		else if (locale == "zhTW" || locale == "enTW") {
 			return DBCStringLocale::zhTW;
 		}
 		else if (locale == "esES") {
@@ -96,7 +96,7 @@ namespace WDBReader::Database {
 		else if (locale == "jaJP") {
 			return DBCStringLocale::jaJP;
 		}
-		else if (locale == "ptPT") {
+		else if (locale == "ptPT" || locale == "ptBR") {
 			return DBCStringLocale::ptPT;
 		}
 		else if (locale == "itIT") {
