@@ -71,7 +71,7 @@ namespace WDBReader::Filesystem {
 
 	inline constexpr DWORD CASCLocaleConvert(const std::string& locale) {
 
-		if (locale == "frFr") {
+		if (locale == "frFR") {
 			return CASC_LOCALE_FRFR;
 		}
 		else if (locale == "deDE") {
