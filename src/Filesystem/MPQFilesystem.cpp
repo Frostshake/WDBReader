@@ -1,5 +1,7 @@
 #include "WDBReader/Filesystem/MPQFilesystem.hpp"
 #include "WDBReader/Utility.hpp"
+#include <array>
+#include <string_view>
 
 namespace WDBReader::Filesystem {
 
@@ -58,74 +60,105 @@ namespace WDBReader::Filesystem {
 
 	std::vector<std::string> discoverMPQArchives(const std::filesystem::path& root)
 	{
-		std::vector<std::filesystem::path> result;
+		std::vector<std::pair<uint32_t, std::string>> entries;
+		using string_t = std::filesystem::path::string_type;
 
 		for (const auto& entry : std::filesystem::recursive_directory_iterator(root)) {
 			if (entry.is_regular_file()) {
 				const auto extension = entry.path().extension().string();
 				if (extension == ".mpq" || extension == ".MPQ") {
-					auto val = entry.path().lexically_relative(root);
-					
-					const auto name = val.stem().native();
-					if (name.starts_with(L"wow-update-")) {
+					const auto val = entry.path().lexically_relative(root);
+					const auto prefix = [&]() -> string_t {
+						if (std::distance(val.begin(), val.end()) > 1) {
+							return val.begin()->native();
+						}
+						return L"";
+					}();
+
+					if (prefix == L"Cache" || prefix == L"cache") {
+						continue;
+					}
+
+					int32_t rank = 0;
+					// remove any locale part.
+					const auto neutral_name = [&](auto name) -> string_t {
+						if (prefix.size() > 0) {
+							auto found = name.find(L"-" + prefix);
+							if (found != string_t::npos) {
+								name.erase(found, prefix.size() + 1);
+							}
+						}
+						return name;
+					}(val.stem().native());
+
+					if (neutral_name.starts_with(L"wow-update-")) {
 						//currently not working with these files (produces PTCH output).
 						continue;
 					}
 
+					if (neutral_name == L"development") {
+						rank = std::numeric_limits<int32_t>::max();
+					}
+					else {
+						// locale higher rank.
+						if (prefix.size() > 0) {
+							rank += std::numeric_limits<int32_t>::max() / 2;
+						}
+
+						if (neutral_name.starts_with(L"common")) {
+							if (neutral_name.size() > std::char_traits<string_t::value_type>::length(L"common")) {
+								rank += 2000;
+							}
+							else {
+								rank += 1000;
+							}
+						}
+						else if (neutral_name.starts_with(L"world")) {
+							if (neutral_name.size() > std::char_traits<string_t::value_type>::length(L"world")) {
+								rank += 3000;
+							}
+							else {
+								rank += 4000;
+							}
+						}
+						else if (neutral_name.starts_with(L"lichking")) {
+							rank += 6000;
+						}
+						else if (neutral_name.starts_with(L"expansion")) {
+							if (neutral_name.size() > std::char_traits<string_t::value_type>::length(L"expansion")) {
+								rank += 7000;
+							}
+							else {
+								rank += 5000;
+							}
+						}
+						else if (neutral_name == L"alternate") {
+							rank += 8000;
+						}
+						else if (neutral_name.starts_with(L"patch")) {
+							if (neutral_name.size() > std::char_traits<string_t::value_type>::length(L"patch")) {
+								rank += 10000;
+							}
+							else {
+								rank += 9000;
+							}
+						}
+					}
+
 					assert(val.native().size() > 0);
-					result.push_back(std::move(val));
+					entries.push_back({rank, val.string()});
 				}
 			}
 		}
 
-		std::ranges::sort(result.begin(), result.end(), [](const std::filesystem::path& left, const std::filesystem::path& right) {
-			const auto left_name = left.stem().native();
-			const auto right_name = right.stem().native();
-
-			const auto left_path = left.parent_path().native();
-			const auto right_path = right.parent_path().native();
-
-			if (left_path == right_path) {
-
-				const bool left_is_exp = left_name.starts_with(L"expansion");
-				const bool right_is_exp = right_name.starts_with(L"expansion");
-
-				if (left_is_exp != right_is_exp) {
-					return left_is_exp;
-				}
-
-				const bool left_is_patch = left_name.starts_with(L"patch");
-				const bool right_is_patch = right_name.starts_with(L"patch");
-
-				if (left_is_patch != right_is_patch) {
-					return left_is_patch;
-				}
-
-
-				if (left_name.starts_with(right_name)) {
-					return true;
-				}
-				else if (right_name.starts_with(left_name)) {
-					return false;
-				}
-
-				if (left_name == right_name) {
-					return left.string() > right.string();
-				}
-
-				return left_name > right;
-			}
-
-			return left_path > right_path;
-		});
+		std::sort(entries.begin(), entries.end(), [](const auto& l, const auto& r) { return l > r; });
 
 		std::vector<std::string> out;
-		out.reserve(result.size());
-		std::transform(result.begin(), result.end(), std::back_inserter(out), [](const auto& item) {
-			return item.string();
+		out.reserve(entries.size());
+		std::transform(entries.begin(), entries.end(), std::back_inserter(out), [](const auto& item) {
+			return std::move(item.second);
 		});
 
 		return out;
 	}
-
 }
