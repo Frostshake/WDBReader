@@ -11,7 +11,7 @@ C++ library for reading "World of Warcraft" database files.
 - Usable with WOWDBDefs
 - Record structure determined at compile time or runtime.
 
-Currently only tested with client versions: `1.12`, `2.4`, `3.3`, `8.3` & `10.2`
+Currently only tested with client versions: `1.12`, `2.4`, `3.3`, `4.3`, `8.3`, `10.2` & `11.0`
 However should be able to work with any using WDBC, WDB2, WDC3, WDC4 or WDC5 formats.
 
 ## Building
@@ -52,13 +52,14 @@ auto db2 = makeDB2File(RuntimeSchema, Source);
 auto db2 = makeDB2File<StaticRecordType>(Source);
 ```
 
-DB usage (applied to both DBC & DB2):
+DB usage (applies to both DBC & DB2):
 ```cpp
 auto db = ...;
 db.open(source);
 db.load();
 // ...
 db.size();
+db.format(); //signature & hashes.
 auto record = db[record_index];
 for(const auto& rec : db) {
     if(rec.encryptionState != RecordEncryption::ENCRYPTED) {

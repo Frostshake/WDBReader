@@ -780,8 +780,11 @@ namespace WDBReader::Database {
 			return _loader->size();
 		}
 
-		Signature signature() const override {
-			return F::signature;
+		DBFormat format() const override {
+			DBFormat fmt(F::signature);
+			fmt.tableHash = _structure.header.table_hash;
+			fmt.layoutHash = _structure.header.layout_hash;
+			return fmt;
 		}
 
 		R operator[](uint32_t index) const override {
@@ -879,8 +882,10 @@ namespace WDBReader::Database {
 			return _header.record_count;
 		}
 
-		Signature signature() const override {
-			return DB2FileFormatWDB2::signature;
+		DBFormat format() const override {
+			DBFormat fmt(DB2FileFormatWDB2::signature);
+			fmt.tableHash = _header.table_hash;
+			return fmt;
 		}
 
 		R operator[](uint32_t index) const override {

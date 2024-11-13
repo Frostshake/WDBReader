@@ -5,6 +5,7 @@
 #include <array>
 #include <cstdint>
 #include <memory>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -38,6 +39,16 @@ namespace WDBReader::Database {
 	constexpr Signature WDC3_MAGIC = "WDC3";
 	constexpr Signature WDC4_MAGIC = "WDC4";
 	constexpr Signature WDC5_MAGIC = "WDC5";
+
+	struct DBFormat {
+	public:
+		constexpr DBFormat(Signature sig) noexcept :
+			signature(sig) {}
+
+		Signature signature;
+		std::optional<uint32_t> tableHash;
+		std::optional<uint32_t> layoutHash;
+	};
 
 
 	/// <summary>

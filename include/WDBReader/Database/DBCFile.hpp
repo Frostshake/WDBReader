@@ -285,8 +285,8 @@ namespace WDBReader::Database {
 			return _header.recordCount;
 		}
 
-		Signature signature() const override {
-			return WDBC_MAGIC;
+		DBFormat format() const override {
+			return DBFormat{ WDBC_MAGIC };
 		}
 
 		R operator[](uint32_t index) const override {

@@ -10,6 +10,7 @@
     The application will output:
     - Detected client versions
     - DB schema
+    - DB format
     - first record of DB
 */
 
@@ -20,6 +21,7 @@
 #include <WDBReader/Filesystem/MPQFilesystem.hpp>
 #include <WDBReader/WoWDBDefs.hpp>
 
+#include <format>
 #include <fstream>
 #include <iostream>
 #include <memory>
@@ -137,6 +139,17 @@ int main(int argc, char* argv[]) {
 
         std::unique_ptr<DataSource<RuntimeRecord>> data_source = fs_handler->open(args.db_file, *schema);
 
+        {
+            auto format = data_source->format();
+            std::cout << "Signature: " << format.signature.str() << std::endl;
+            if (format.tableHash) {
+                std::cout << "Table hash: " << std::format("{:#x}", format.tableHash.value()) << std::endl;
+            }
+            if (format.layoutHash) {
+                std::cout << "Layout hash: " << std::format("{:#x}", format.layoutHash.value()) << std::endl;
+            }
+        }
+
         if (data_source->size() > 0) {
             std::cout << "-----" << std::endl;
             printRecord(*schema, (*data_source)[0]);
@@ -166,7 +179,6 @@ std::unique_ptr<DataSource<RuntimeRecord>> CASCFSHandler::open(const std::string
 
     auto db2 = makeDB2File<RuntimeSchema, RuntimeRecord, CASCFileSource>(schema, std::move(source));
 
-    std::cout << "DB2 (" << db2->size() << ")" << std::endl;
     return db2;
 }
 
@@ -187,6 +199,7 @@ std::unique_ptr<DataSource<RuntimeRecord>> MPQFSHandler::open(const std::string&
         version = DBCVersion::BC_WOTLK;
     }
 
+
     printSchema(schema);
     std::cout << "Src record bytes: " << DBCFormat::recordSizeSrc(schema, version) << std::endl;
     std::cout << "Dest record bytes: " << DBCFormat::recordSizeDest(schema, version) << std::endl;
@@ -195,7 +208,6 @@ std::unique_ptr<DataSource<RuntimeRecord>> MPQFSHandler::open(const std::string&
     dbc->open(std::move(source));
     dbc->load();
 
-    std::cout << "DBC (" << dbc->size() << ")" << std::endl;
     return dbc;
 }
 
